@@ -1,21 +1,4 @@
-# Sample Template Spec
-
-## Purpose
-
-Defines the content and behaviour of the sample template files (`src/sample/theme.js` and `src/sample/slides/deck.js`) that serve as the starting point for every new workspace.
-
-## Requirements
-
-### Requirement: Sample theme file provides working defaults
-`src/sample/theme.js` SHALL export a default object that is a valid theme override for `createLib()` — compilable and runnable without modification. It SHALL include commented stubs for the most common override keys: `color`, `header.wordmark`, `header.badge`, `footer.left`, `footer.right`.
-
-#### Scenario: Sample theme compiles without modification
-- **WHEN** `bin/compile.js` is run against a workspace created from the sample template
-- **THEN** the compile succeeds without errors related to the theme file
-
-#### Scenario: Theme stubs are visible but optional
-- **WHEN** a developer opens `theme.js` in a new workspace
-- **THEN** they see commented examples for color, header, and footer overrides, with a minimal uncommented export that applies no overrides by default
+## MODIFIED Requirements
 
 ### Requirement: Sample slide file produces a valid slide
 `src/sample/slides/deck.js` SHALL export a default function matching the `(pptx, lib) => void` signature expected by `bin/compile.js`. It SHALL produce exactly **7 slides**, one per component category, using `lib` helpers (not raw pptxgenjs calls). Each slide SHALL include a `frame.border`, `frame.slideHeader`, and `frame.slideFooter`. It SHALL include a comment directing the author to `INSTRUCTIONS.md` and `lib.d.ts` for the full API.

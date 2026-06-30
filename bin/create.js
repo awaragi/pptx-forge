@@ -20,7 +20,10 @@ if (!name) {
   process.exit(1);
 }
 
-const dest = resolve(root, 'workspaces', name);
+const workspacesDir = resolve(root, 'workspaces');
+await mkdir(workspacesDir, { recursive: true });
+
+const dest = resolve(workspacesDir, name);
 
 try {
   await access(dest);

@@ -48,18 +48,22 @@ Every function exported by `createLib` SHALL follow the grammar `fn(slide, box, 
 - **THEN** it contains exactly `text`, `roundRect`, `fillRect`, `circle`, `hLine`, `vLine`, `bullets` as functions
 
 ### Requirement: comp group exports
-`lib.comp` SHALL export: `phaseLabel`, `flowBox`, `flowArrow`, `smallCard`, `artifactCard`, `benefitCard`, `miniCard`, `phaseBox`, `numberedStep`.
+`lib.comp` SHALL export exactly: `phaseLabel`, `flowBox`, `flowArrow`, `numberedStep`, `infoCard`, `accentCard`, `overlayCard`, `fileCard`, `stepBox`, `iconStat`, `iconBox`, `bulletIconList`, `imageCard`, `twoColumnRow`, `progressBar`, `tagBadge`, `stepFlow`, `imageHolder`, `labeledSection`. The old names `smallCard`, `benefitCard`, `miniCard`, `artifactCard`, and `phaseBox` SHALL NOT be present.
 
-#### Scenario: All comp functions accessible
+#### Scenario: All nineteen comp functions accessible
 - **WHEN** `lib.comp` is inspected
-- **THEN** it contains all nine component functions
+- **THEN** it contains exactly the nineteen listed functions
+
+#### Scenario: Old names are absent
+- **WHEN** `lib.comp` is inspected
+- **THEN** it does NOT contain `smallCard`, `benefitCard`, `miniCard`, `artifactCard`, or `phaseBox`
 
 ### Requirement: layout group exports
-`lib.layout` SHALL export: `sectionTitle`, `darkPanelHeader`, `labeledDivider`, `calloutBanner`, `pullQuote`.
+`lib.layout` SHALL export: `sectionTitle`, `darkPanelHeader`, `labeledDivider`, `calloutBanner`, `pullQuote`, `labeledSection`.
 
-#### Scenario: All layout functions accessible
+#### Scenario: All six layout functions accessible
 - **WHEN** `lib.layout` is inspected
-- **THEN** it contains all five layout functions
+- **THEN** it contains `sectionTitle`, `darkPanelHeader`, `labeledDivider`, `calloutBanner`, `pullQuote`, `labeledSection` as functions
 
 ### Requirement: frame group exports
 `lib.frame` SHALL export: `border`, `slideHeader`, `slideFooter`.
@@ -84,14 +88,26 @@ Single-content functions SHALL accept content as a scalar value, a `{ field }` o
 - **THEN** the original array is returned unchanged
 
 ### Requirement: camelCase naming, no abbreviations
-All exported function names SHALL be camelCase. No abbreviated names SHALL be used. Specifically: `text` (not `txt`), `roundRect` (not `rrect`), `hLine` (not `hline`), `vLine` (not `vline`), `smallCard` (not `SmallCard`).
+All exported function names SHALL be camelCase. Specifically: `text` (not `txt`), `roundRect` (not `rrect`), `hLine` (not `hline`), `vLine` (not `vline`), `infoCard` (not `InfoCard` or `smallCard`).
 
-#### Scenario: Old abbreviated names no longer exported
+#### Scenario: Old abbreviated and old camelCase names no longer exported
 - **WHEN** the return value of `createLib` is inspected
-- **THEN** it does NOT contain `txt`, `rrect`, `hline`, `vline`, or any PascalCase function names at the top level
+- **THEN** it does NOT contain `txt`, `rrect`, `hline`, `vline`, `smallCard`, `benefitCard`, `miniCard`, `artifactCard`, `phaseBox`, or any PascalCase function names at the top level
 
 ### Requirement: lib.d.ts declares ThemeShape and per-component sub-interfaces
-`lib.d.ts` SHALL declare a `ThemeShape` interface describing the full structure of `theme.shape`, with nested interfaces for each component namespace. The `Lib` interface's `theme` property SHALL be updated to expose `theme.shape` as `ThemeShape`. All component namespace sub-interfaces (`CardShape`, `ArtifactCardShape`, `MiniCardShape`, `PhaseLabelShape`, `FlowBoxShape`, `FlowArrowShape`, `DividerShape`, `CalloutBannerShape`, `DarkPanelHeaderShape`, `PullQuoteShape`, `SectionTitleShape`, `FrameShape`) SHALL be declared. The `ShadowOpts` interface (already present) SHALL be reused for `CardShape.shadow`.
+`lib.d.ts` SHALL declare a `ThemeShape` interface describing the full structure of `theme.shape`, with nested interfaces for each component namespace including new ones. New interfaces SHALL be declared for: `IconStatShape`, `IconBoxShape`, `ImageCardShape`, `ProgressBarShape`, `TagBadgeShape`, `DataTableShape`, `ComparisonTableShape`. The `Lib` interface SHALL expose `tables` as a `TablesGroup`. All existing shape interfaces SHALL remain. All component namespace sub-interfaces (`CardShape`, `ArtifactCardShape`, `MiniCardShape`, `PhaseLabelShape`, `FlowBoxShape`, `FlowArrowShape`, `DividerShape`, `CalloutBannerShape`, `DarkPanelHeaderShape`, `PullQuoteShape`, `SectionTitleShape`, `FrameShape`) SHALL be declared. The `ShadowOpts` interface (already present) SHALL be reused for `CardShape.shadow`.
+
+#### Scenario: ThemeShape includes new component shape interfaces
+- **WHEN** `lib.d.ts` is inspected
+- **THEN** `ThemeShape` contains properties `iconStat`, `iconBox`, `imageCard`, `progressBar`, `tagBadge`, `dataTable`, `comparisonTable` in addition to all existing properties
+
+#### Scenario: Lib interface includes tables group
+- **WHEN** `lib.d.ts` is inspected
+- **THEN** the `Lib` interface contains a `tables` property typed as `TablesGroup`
+
+#### Scenario: TablesGroup declares dataTable and comparisonTable
+- **WHEN** `lib.d.ts` is inspected
+- **THEN** `TablesGroup` contains `dataTable` and `comparisonTable` as function signatures
 
 #### Scenario: ThemeShape is exported and complete
 - **WHEN** `lib.d.ts` is inspected
@@ -114,12 +130,31 @@ All exported function names SHALL be camelCase. No abbreviated names SHALL be us
 - **THEN** the `Lib` interface exposes `theme: { shape: ThemeShape; scheme: any; color: any; size: any; font: any; grid: any; header: any; footer: any; }` or equivalent
 
 ### Requirement: Content field naming standards
-Component content objects SHALL use standardized field names: `title` and `body` for card heading and body copy; `label` for short badge or identifier text; `steps` (string array) for structured list content in `phaseBox`; `subtitle` for secondary panel text; `text` for single-text layout functions; `items` (string array) for `bullets`.
+Component content objects SHALL use standardized field names: `title` and `body` for card heading and body copy; `label` for short badge or identifier text; `steps` (string array) for structured list content in `stepBox`; `subtitle` for secondary panel text; `text` for single-text layout functions; `items` (string array) for `bullets`; `value` (number 0–1 or string) for `iconStat` and `progressBar`; `icon` (UTF-8 string) for `iconBox`, `imageCard`, `imageHolder`; `headers` (string array) and `rows` for table components.
 
-#### Scenario: PhaseBox steps is a string array
-- **WHEN** `comp.phaseBox(slide, box, { label: 'Foundation', steps: ['Setup', 'Intake'] }, opts, name)` is called
+#### Scenario: stepBox steps is a string array
+- **WHEN** `comp.stepBox(slide, box, { label: 'Foundation', steps: ['Setup', 'Intake'] }, opts, name)` is called
 - **THEN** the rendered text joins the array with ' · ' separator
+
+#### Scenario: progressBar value is a number 0–1
+- **WHEN** `comp.progressBar(slide, box, { value: 0.72, label: 'Adoption' }, opts, name)` is called
+- **THEN** the fill bar renders at 72% of the available width
+
+#### Scenario: stepFlow receives an array of label objects
+- **WHEN** `comp.stepFlow(slide, box, [{ label: 'A' }, { label: 'B' }, { label: 'C' }], opts, name)` is called
+- **THEN** three flow boxes and two arrows are rendered across box.w
 
 #### Scenario: bullets items is a string array
 - **WHEN** `prim.bullets(slide, box, ['Item one', 'Item two'], opts, name)` is called
 - **THEN** both items render as bullet points
+
+### Requirement: tables namespace
+`createLib` SHALL return a `tables` property containing `dataTable` and `comparisonTable`. The namespace SHALL be destructurable alongside `prim`, `comp`, `layout`, and `frame`.
+
+#### Scenario: tables is destructurable from lib
+- **WHEN** a slide file calls `const { tables } = lib`
+- **THEN** `tables` is a plain object containing `dataTable` and `comparisonTable` as functions
+
+#### Scenario: tables functions are callable
+- **WHEN** `lib.tables.dataTable` and `lib.tables.comparisonTable` are inspected
+- **THEN** both are functions

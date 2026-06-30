@@ -60,12 +60,23 @@ export interface ShadowOpts {
 
 // ── Content object types ──────────────────────────────────────────────────────
 
-export interface SmallCardContent   { title: string; body: string; }
-export interface PhaseBoxContent    { label: string; steps: string[]; }
-export interface ArtifactCardContent { filename: string; purpose: string; step: string; }
+export interface InfoCardContent     { title: string; body?: string; }
+export interface FileCardContent     { filename: string; purpose: string; step: string; }
+export interface StepBoxContent      { label: string; steps: string[]; }
 export interface NumberedStepContent { num: number; title: string; body: string; }
 export interface DarkPanelHeaderContent { title: string; subtitle?: string; }
-export interface FlowBoxContent     { label: string; highlight?: boolean; }
+export interface FlowBoxContent      { label: string; highlight?: boolean; }
+export interface IconStatContent     { value: string; label: string; icon?: string; }
+export interface IconBoxContent      { icon?: string; title: string; body?: string; }
+export interface BulletIconItem      { icon: string; text: string; }
+export interface ImageCardContent    { image?: string; title: string; body?: string; imageH?: number; }
+export interface TwoColumnRowContent { label: string; content: string; }
+export interface ProgressBarContent  { value: number; label?: string; showPct?: boolean; }
+export interface TagBadgeContent     { label: string; }
+export interface ImageHolderContent  { icon?: string; label?: string; }
+export interface LabeledSectionContent { title: string; subtitle?: string; }
+export interface DataTableContent    { headers: string[]; rows?: string[][]; }
+export interface ComparisonTableContent { headers: string[]; rows?: string[][]; }
 
 // ── theme.shape interfaces ────────────────────────────────────────────────────
 
@@ -78,7 +89,8 @@ export interface CardShape {
   shadow:      ShadowOpts;
 }
 
-export interface ArtifactCardShape {
+/** renamed from ArtifactCardShape */
+export interface FileCardShape {
   bgColor:       string;
   borderColor:   string;
   filenameColor: string;
@@ -86,7 +98,8 @@ export interface ArtifactCardShape {
   stepColor:     string;
 }
 
-export interface MiniCardShape {
+/** renamed from MiniCardShape */
+export interface OverlayCardShape {
   titleColor: string;
   bodyColor:  string;
 }
@@ -149,12 +162,20 @@ export interface FrameShape {
   footerTextColor: string;
 }
 
+export interface IconStatShape    { valueColor: string; labelColor: string; }
+export interface IconBoxShape     { bgColor: string; borderColor: string; iconColor: string; titleColor: string; bodyColor: string; }
+export interface ImageCardShape   { imageColor: string; bgColor: string; borderColor: string; titleColor: string; bodyColor: string; shadow: ShadowOpts; }
+export interface ProgressBarShape { fillColor: string; trackColor: string; labelColor: string; pctColor: string; }
+export interface TagBadgeShape    { bgColor: string; textColor: string; }
+export interface DataTableShape   { headerBgColor: string; headerTextColor: string; rowBgColor: string; altBgColor: string; borderColor: string; textColor: string; }
+export interface ComparisonTableShape { headerBgColor: string; headerTextColor: string; criteriaColor: string; valueColor: string; borderColor: string; }
+
 export interface ThemeShape {
   radius:          number;
   borderW:         number;
   card:            CardShape;
-  artifactCard:    ArtifactCardShape;
-  miniCard:        MiniCardShape;
+  fileCard:        FileCardShape;
+  overlayCard:     OverlayCardShape;
   phaseLabel:      PhaseLabelShape;
   flowBox:         FlowBoxShape;
   flowArrow:       FlowArrowShape;
@@ -164,6 +185,14 @@ export interface ThemeShape {
   pullQuote:       PullQuoteShape;
   sectionTitle:    SectionTitleShape;
   frame:           FrameShape;
+  // new component shape stanzas
+  iconStat:        IconStatShape;
+  iconBox:         IconBoxShape;
+  imageCard:       ImageCardShape;
+  progressBar:     ProgressBarShape;
+  tagBadge:        TagBadgeShape;
+  dataTable:       DataTableShape;
+  comparisonTable: ComparisonTableShape;
 }
 
 // ── Namespace groups ──────────────────────────────────────────────────────────
@@ -261,26 +290,28 @@ export interface CompGroup {
     name?: string,
   ): void;
 
-  /** Small card with title and optional body text. */
-  smallCard(
+  /** Numbered step card. `box.h` sets height. */
+  numberedStep(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
-    content: SmallCardContent,
+    content: NumberedStepContent,
     opts?: CardOpts & Record<string, any>,
     name?: string,
   ): void;
 
-  /** Artifact card showing filename, purpose, and next step. */
-  artifactCard(
+  // ── Renamed components ──────────────────────────────────────────────────────
+
+  /** Info card with title and optional body. (renamed from smallCard) */
+  infoCard(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
-    content: ArtifactCardContent,
-    opts?: { filenameColor?: string } & Record<string, any>,
+    content: InfoCardContent,
+    opts?: CardOpts & { bodyColor?: string } & Record<string, any>,
     name?: string,
   ): void;
 
-  /** Benefit card with accent stripe and body copy. */
-  benefitCard(
+  /** Accent stripe card with title and body. (renamed from benefitCard) */
+  accentCard(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
     content: { title: string; body: string },
@@ -288,8 +319,8 @@ export interface CompGroup {
     name?: string,
   ): void;
 
-  /** Mini card with semi-transparent background. `box.w` and `box.h` set dimensions. */
-  miniCard(
+  /** Semi-transparent overlay card. (renamed from miniCard) */
+  overlayCard(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
     content: { title: string; body: string },
@@ -297,21 +328,104 @@ export interface CompGroup {
     name?: string,
   ): void;
 
-  /** Phase box with label and steps array (joined with ' · ' internally). */
-  phaseBox(
+  /** Monospace filename card. (renamed from artifactCard) */
+  fileCard(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
-    content: PhaseBoxContent,
+    content: FileCardContent,
+    opts?: { filenameColor?: string } & Record<string, any>,
+    name?: string,
+  ): void;
+
+  /** Step box with label and steps array joined with ' · '. (renamed from phaseBox) */
+  stepBox(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: StepBoxContent,
     opts?: CardOpts & Record<string, any>,
     name?: string,
   ): void;
 
-  /** Numbered step card. `box.h` sets height — no longer hardcoded. */
-  numberedStep(
+  // ── New components ──────────────────────────────────────────────────────────
+
+  /** KPI stat tile — large value in accent color with a small label below. Optional UTF-8 icon above. */
+  iconStat(
     slide: any,
     box: { x: number; y: number; w: number; h: number },
-    content: NumberedStepContent,
+    content: IconStatContent,
+    opts?: { valueColor?: string; labelColor?: string; fontSize?: number },
+    name?: string,
+  ): void;
+
+  /** Icon callout card — rounded rect with large centered UTF-8 icon, title, and optional body. */
+  iconBox(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: IconBoxContent,
+    opts?: { bgColor?: string; borderColor?: string; iconColor?: string; titleColor?: string; bodyColor?: string },
+    name?: string,
+  ): void;
+
+  /** Icon-prefixed bullet list. Each item is `{ icon, text }`. */
+  bulletIconList(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    items: BulletIconItem[],
+    opts?: { iconColor?: string; textColor?: string; fontSize?: number },
+    name?: string,
+  ): void;
+
+  /** Card with emoji image placeholder band at top. User swaps emoji in PPT designer. */
+  imageCard(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: ImageCardContent,
+    opts?: { imageColor?: string; bgColor?: string; borderColor?: string; titleColor?: string; bodyColor?: string },
+    name?: string,
+  ): void;
+
+  /** Left label / right content row. Stack for key-value layouts. `opts.splitRatio` defaults to 0.35. */
+  twoColumnRow(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: TwoColumnRowContent,
+    opts?: { splitRatio?: number; labelColor?: string; contentColor?: string; fontSize?: number },
+    name?: string,
+  ): void;
+
+  /** Horizontal progress bar. `value` is 0–1. */
+  progressBar(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: ProgressBarContent,
+    opts?: { fillColor?: string; trackColor?: string; labelColor?: string; pctColor?: string; trackH?: number },
+    name?: string,
+  ): void;
+
+  /** Small filled rounded-rect pill badge with centered label. */
+  tagBadge(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content: TagBadgeContent,
+    opts?: { bgColor?: string; textColor?: string; fontSize?: number },
+    name?: string,
+  ): void;
+
+  /** Auto-distributed horizontal step flow across `box.w`. */
+  stepFlow(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    items: FlowBoxContent[],
     opts?: Record<string, any>,
+    name?: string,
+  ): void;
+
+  /** Styled placeholder box with centered emoji and label. User swaps in PPT designer. */
+  imageHolder(
+    slide: any,
+    box: { x: number; y: number; w: number; h: number },
+    content?: ImageHolderContent,
+    opts?: { borderColor?: string; iconColor?: string; labelColor?: string },
     name?: string,
   ): void;
 }
@@ -375,6 +489,45 @@ export interface LayoutGroup {
     opts?: TextOpts,
     name?: string,
   ): void;
+
+  /** Section title + optional dark panel header in one call. Box fields default to theme grid. */
+  labeledSection(
+    slide: any,
+    box: { x?: number; y?: number; w?: number } | undefined | null,
+    content: LabeledSectionContent,
+    opts?: { titleH?: number; panelH?: number; gap?: number } & Record<string, any>,
+    name?: string,
+  ): void;
+}
+
+export interface TablesGroup {
+  /** Standard table with accent header row and alternating data rows. */
+  dataTable(
+    slide: any,
+    box: { x: number; y: number; w: number; h?: number },
+    content: DataTableContent,
+    opts?: {
+      headerBgColor?: string; headerTextColor?: string;
+      rowBgColor?: string; altBgColor?: string;
+      borderColor?: string; textColor?: string;
+      fontSize?: number; rowH?: number;
+    },
+    name?: string,
+  ): void;
+
+  /** Comparison table — wide criteria column + value columns. Supports UTF-8 symbols as values. */
+  comparisonTable(
+    slide: any,
+    box: { x: number; y: number; w: number; h?: number },
+    content: ComparisonTableContent,
+    opts?: {
+      headerBgColor?: string; headerTextColor?: string;
+      criteriaColor?: string; valueColor?: string;
+      borderColor?: string; criteriaW?: number;
+      fontSize?: number; rowH?: number;
+    },
+    name?: string,
+  ): void;
 }
 
 export interface FrameGroup {
@@ -423,6 +576,7 @@ export interface Lib {
   run:    RunHelper;
   prim:   PrimGroup;
   comp:   CompGroup;
+  tables: TablesGroup;
   layout: LayoutGroup;
   frame:  FrameGroup;
 }

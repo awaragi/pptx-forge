@@ -1,10 +1,4 @@
-# Workspace Scaffold Spec
-
-## Purpose
-
-Defines the interactive `bin/create.js` script that bootstraps a new named workspace under `workspaces/<name>/` by copying template files from `src/sample/`.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Interactive workspace creation
 `bin/create.js` SHALL prompt the user for a workspace name and create a new workspace directory under `workspaces/<name>/` by copying template files from `src/sample/`. The script SHALL explicitly ensure the `workspaces/` parent directory exists before proceeding, creating it if absent.
@@ -24,17 +18,3 @@ Defines the interactive `bin/create.js` script that bootstraps a new named works
 #### Scenario: workspaces parent directory does not exist
 - **WHEN** the user runs `node bin/create.js` in a freshly extracted release archive where `workspaces/` has never been created
 - **THEN** the script creates the `workspaces/` directory and then creates the new workspace inside it without error
-
-### Requirement: Workspace name used as directory slug
-The workspace name entered by the user SHALL be used verbatim as the directory name under `workspaces/`. The script SHALL NOT transform, lowercase, or slugify the input.
-
-#### Scenario: Name with spaces or special characters
-- **WHEN** the user enters a name such as `My Deck`
-- **THEN** the workspace is created at `workspaces/My Deck/` with no transformation applied
-
-### Requirement: Template files copied without modification
-`bin/create.js` SHALL copy `src/sample/theme.js` and `src/sample/slides/deck.js` into the new workspace, preserving the relative directory structure, without modifying file content.
-
-#### Scenario: Template files are copied as-is
-- **WHEN** a workspace is successfully created
-- **THEN** `workspaces/<name>/theme.js` is byte-identical to `src/sample/theme.js` and `workspaces/<name>/slides/deck.js` is byte-identical to `src/sample/slides/deck.js`
