@@ -18,6 +18,12 @@ jobs:
           tag="${GITHUB_REF#refs/tags/}"
           git archive --format=zip --prefix="pptx-forge-${tag}/" HEAD > "pptx-forge-${tag}.zip"
 
+      - name: Add lib.d.ts.txt to archive
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          cp lib.d.ts lib.d.ts.txt
+          zip "pptx-forge-${tag}.zip" lib.d.ts.txt
+
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -39,6 +39,7 @@ Copies the starter template into `workspaces/my-deck/` and prints next steps.
 
 ```bash
 npm run forge my-deck
+npm run forge workspaces/my-deck   # relative path — useful for tab completion
 ```
 
 Aliases: `npm run build my-deck`, `npm run generate my-deck`
@@ -68,6 +69,7 @@ npm run forge -- --help                    # show help
 
 ```bash
 npm run backup my-deck
+npm run backup workspaces/my-deck   # relative path — useful for tab completion
 ```
 
 Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.zip`.

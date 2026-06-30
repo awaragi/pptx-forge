@@ -5,7 +5,7 @@
 import { readdir, mkdir, readFile, writeFile } from 'fs/promises';
 import { spawn } from 'child_process';
 import JSZip from 'jszip';
-import { resolve, join } from 'path';
+import { resolve, join, basename } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import pptxgen from 'pptxgenjs';
 import { createLib } from '../src/lib.js';
@@ -16,7 +16,7 @@ const helpFlag      = args.includes('--help')     || args.includes('-h');
 const openFlag      = args.includes('--open')     || args.includes('-o');
 const previewFlag   = args.includes('--preview')  || args.includes('-v');
 const snapshotFlag  = args.includes('--snapshot') || args.includes('-t');
-const workspaceSlug = args.find(a => !a.startsWith('-'));
+const workspaceArg  = args.find(a => !a.startsWith('-'));
 
 const HELP = `\
 Usage: npm run forge <workspace> [options]
@@ -45,14 +45,17 @@ if (helpFlag) {
   process.exit(0);
 }
 
-if (!workspaceSlug) {
+if (!workspaceArg) {
   console.error('Error: workspace name is required.\n');
   process.stderr.write(HELP);
   process.exit(1);
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const wsDir = resolve(root, 'workspaces', workspaceSlug);
+const wsDir = (workspaceArg.includes('/') || workspaceArg.startsWith('.'))
+  ? resolve(process.cwd(), workspaceArg)
+  : resolve(root, 'workspaces', workspaceArg);
+const workspaceSlug = basename(wsDir);
 const slidesDir = join(wsDir, 'slides');
 const outDir = join(wsDir, 'out');
 await mkdir(outDir, { recursive: true });

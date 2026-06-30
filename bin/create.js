@@ -9,11 +9,17 @@ import { fileURLToPath } from 'url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
-const rl = createInterface({ input: process.stdin, output: process.stdout });
-const ask = (q) => new Promise((res) => rl.question(q, res));
+const argName = process.argv[2]?.trim();
 
-const name = (await ask('Workspace name: ')).trim();
-rl.close();
+let name;
+if (argName) {
+  name = argName;
+} else {
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (q) => new Promise((res) => rl.question(q, res));
+  name = (await ask('Workspace name: ')).trim();
+  rl.close();
+}
 
 if (!name) {
   console.error('Error: workspace name cannot be empty.');

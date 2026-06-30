@@ -3,13 +3,13 @@
 // Usage: npm run backup <workspace> [--help|-h]
 
 import { createWriteStream, mkdirSync } from 'fs';
-import { resolve, join } from 'path';
+import { resolve, join, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { ZipArchive } from 'archiver';
 
 const args = process.argv.slice(2);
 const helpFlag      = args.includes('--help') || args.includes('-h');
-const workspaceSlug = args.find(a => !a.startsWith('-'));
+const workspaceArg  = args.find(a => !a.startsWith('-'));
 
 const HELP = `\
 Usage: npm run backup <workspace>
@@ -21,13 +21,16 @@ Options:
   -h, --help    Show this help message
 `;
 
-if (helpFlag || !workspaceSlug) {
+if (helpFlag || !workspaceArg) {
   process.stdout.write(HELP);
   process.exit(0);
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const wsDir = resolve(root, 'workspaces', workspaceSlug);
+const wsDir = (workspaceArg.includes('/') || workspaceArg.startsWith('.'))
+  ? resolve(process.cwd(), workspaceArg)
+  : resolve(root, 'workspaces', workspaceArg);
+const workspaceSlug = basename(wsDir);
 const backupsDir = join(wsDir, 'backups');
 mkdirSync(backupsDir, { recursive: true });
 
