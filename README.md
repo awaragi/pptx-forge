@@ -87,3 +87,15 @@ export default function Slide01_Title(pptx, lib) {
 ```
 
 For AI-assisted authoring, share `INSTRUCTIONS.md` and `lib.d.ts` with your model. These two files contain everything needed to generate correct slide files.
+
+## License
+
+GPL-3.0-or-later — see [LICENSE](LICENSE). You are free to use, modify, and distribute this software under the terms of the GNU General Public License v3 or any later version; you may not incorporate it verbatim into proprietary software without releasing your changes under the same license.
+
+## Custom components
+
+If the built-in `comp` components don't meet your design needs, it is entirely acceptable to build new ones directly in your slide files using `prim` primitives. There is no requirement to stay within the existing component set.
+
+It is also acceptable to use pptxgenjs directly (e.g. `slide.addText()`, `slide.addShape()`, `slide.addImage()`) when `lib` doesn't cover what you need. Prefer `lib` where it applies — fall back to raw pptxgenjs only when necessary. See the [pptxgenjs docs](https://gitbrent.github.io/PptxGenJS/) for reference.
+
+If you create something reusable and well-tested, sharing it back with the forge is highly appreciated — open a PR with the implementation or file an issue and paste the function code. Contributions help grow the shared component library for everyone.

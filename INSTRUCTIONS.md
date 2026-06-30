@@ -292,6 +292,16 @@ prim.text(slide, { x: region.ix, y: region.contentY, w: region.iw, h: 0.4 },
 
 ---
 
+## Custom Components
+
+If the built-in components don't meet your design needs, **it is entirely acceptable to build new components** directly in your slide files using `prim` primitives. A custom component is just a plain function that takes `(slide, box, content, opts)` and makes `prim` calls internally — there is no special registration or framework needed.
+
+It is also acceptable to **drop down to pptxgenjs directly** (e.g. `slide.addText()`, `slide.addShape()`, `slide.addImage()`) when `lib` does not expose what you need. Use the [pptxgenjs docs](https://gitbrent.github.io/PptxGenJS/) as reference. Prefer `lib` where it covers the use case — fall back to raw pptxgenjs only when necessary.
+
+If you create something reusable and well-tested, sharing it back with the forge is highly appreciated. Open a PR with the implementation or file an issue and paste the function code. This helps grow the shared component library for everyone.
+
+---
+
 ## `layout` — Layout
 
 Slide-level structural elements. Use for section headings, panel headers, dividers, and banners.
