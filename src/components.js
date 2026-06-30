@@ -405,10 +405,143 @@ export function makeComponents(theme, prim) {
     }
   }
 
+  // calloutQuote — left-accent insight/quote box
+  // content: { label?, quote }
+  function calloutQuote(slide, box, { label, quote } = {}, opts = {}, name) {
+    const { x, y, w, h } = box;
+    const cb = theme.shape.calloutBanner;
+    const {
+      accentColor = cb.accentColor,
+      labelColor  = cb.accentColor,
+      quoteColor  = 'tx2',
+    } = opts;
+    const barW = cb.accentW ?? 0.07;
+    roundRect(slide, { x, y, w, h }, undefined, {
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: theme.shape.card.borderColor, width: theme.shape.borderW },
+    }, `${name}-bg`);
+    fillRect(slide, { x, y, w: barW, h }, undefined, {
+      fill: { color: accentColor },
+      line: { color: accentColor, width: 0 },
+    }, `${name}-bar`);
+    const tx = x + barW + 0.16;
+    const tw = w - barW - 0.24;
+    if (label) {
+      text(slide, { x: tx, y: y + 0.14, w: tw, h: 0.18 }, label,
+        { fontSize: theme.size.xsmall, bold: true, color: labelColor, charSpace: 1.2 },
+        `${name}-label`);
+      text(slide, { x: tx, y: y + 0.36, w: tw, h: h - 0.48 }, quote,
+        { fontSize: theme.size.body, color: quoteColor },
+        `${name}-quote`);
+    } else {
+      text(slide, { x: tx, y: y + 0.14, w: tw, h: h - 0.28 }, quote,
+        { fontSize: theme.size.body, color: quoteColor },
+        `${name}-quote`);
+    }
+  }
+
+  // darkStat — dark-background KPI tile; dark-bg counterpart to iconStat
+  // content: { value, label, source? }
+  function darkStat(slide, box, { value, label, source } = {}, opts = {}, name) {
+    const { x, y, w, h } = box;
+    const ds = theme.shape.darkStat;
+    const {
+      bgColor     = ds.bgColor,
+      valueColor  = ds.valueColor,
+      labelColor  = ds.labelColor,
+      sourceColor = ds.sourceColor,
+    } = opts;
+    roundRect(slide, { x, y, w, h }, undefined, {
+      fill: { color: bgColor },
+      line: { color: bgColor },
+    }, `${name}-bg`);
+    const sourceH = source ? 0.18 : 0;
+    const valueH  = h * 0.46;
+    const labelH  = h * 0.22;
+    const topPad  = (h - valueH - labelH - sourceH) / 2;
+    text(slide, { x: x + 0.18, y: y + topPad, w: w - 0.36, h: valueH }, value,
+      { fontSize: theme.size.h2, bold: true, color: valueColor, align: 'center', valign: 'middle' },
+      `${name}-value`);
+    text(slide, { x: x + 0.18, y: y + topPad + valueH, w: w - 0.36, h: labelH }, label,
+      { fontSize: theme.size.small, color: labelColor, align: 'center', valign: 'middle' },
+      `${name}-label`);
+    if (source) {
+      text(slide, { x: x + 0.18, y: y + h - sourceH - 0.10, w: w - 0.36, h: sourceH }, source,
+        { fontSize: theme.size.caption, color: sourceColor, align: 'center' },
+        `${name}-source`);
+    }
+  }
+
+  // challengeCard — left-bar accent card for challenges or risks
+  // content: { title, body }
+  function challengeCard(slide, box, { title, body } = {}, opts = {}, name) {
+    const { x, y, w, h } = box;
+    const {
+      accentColor = theme.shape.card.accentColor,
+      bodyColor   = theme.shape.card.bodyColor,
+    } = opts;
+    const barW = 0.06;
+    roundRect(slide, { x, y, w, h }, undefined, {
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: theme.shape.card.borderColor, width: theme.shape.borderW },
+      shadow: { ...theme.shape.card.shadow },
+    }, `${name}-bg`);
+    fillRect(slide, { x, y, w: barW, h }, undefined, {
+      fill: { color: accentColor },
+      line: { color: accentColor, width: 0 },
+    }, `${name}-bar`);
+    const tx = x + barW + 0.16;
+    const tw = w - barW - 0.24;
+    text(slide, { x: tx, y: y + 0.14, w: tw, h: 0.22 }, title,
+      { fontSize: theme.size.cardTitle, bold: true, color: theme.shape.card.titleColor },
+      `${name}-title`);
+    text(slide, { x: tx, y: y + 0.42, w: tw, h: h - 0.54 }, body,
+      { fontSize: theme.size.xsmall, color: bodyColor },
+      `${name}-body`);
+  }
+
+  // teamCard — circular avatar placeholder + name + role + optional bio
+  // content: { name, role, bio? }
+  function teamCard(slide, box, { name: memberName, role, bio } = {}, opts = {}, name) {
+    const { x, y, w, h } = box;
+    const tc = theme.shape.teamCard;
+    const {
+      avatarBgColor   = tc.avatarBgColor,
+      avatarTextColor = tc.avatarTextColor,
+      nameColor       = theme.shape.card.titleColor,
+      roleColor       = 'accent1',
+      bioColor        = theme.shape.card.bodyColor,
+    } = opts;
+    const avatarD = Math.min(w * 0.55, 0.90);
+    const avatarX = x + (w - avatarD) / 2;
+    const avatarY = y + 0.18;
+    const belowAvatar = avatarY + avatarD + 0.12;
+    circle(slide, { x: avatarX, y: avatarY, w: avatarD }, undefined, {
+      fill: { color: avatarBgColor },
+      line: { color: avatarBgColor },
+    }, `${name}-avatar`);
+    text(slide, { x: avatarX, y: avatarY, w: avatarD, h: avatarD },
+      memberName ? memberName[0].toUpperCase() : '?',
+      { fontSize: theme.size.h3, bold: true, color: avatarTextColor, align: 'center', valign: 'middle' },
+      `${name}-initial`);
+    text(slide, { x: x + 0.10, y: belowAvatar, w: w - 0.20, h: 0.26 }, memberName,
+      { fontSize: theme.size.h4, bold: true, color: nameColor, align: 'center' },
+      `${name}-name`);
+    text(slide, { x: x + 0.10, y: belowAvatar + 0.28, w: w - 0.20, h: 0.20 }, role,
+      { fontSize: theme.size.small, color: roleColor, align: 'center' },
+      `${name}-role`);
+    if (bio) {
+      text(slide, { x: x + 0.10, y: belowAvatar + 0.52, w: w - 0.20, h: h - (belowAvatar - y) - 0.60 }, bio,
+        { fontSize: theme.size.xsmall, color: bioColor, align: 'center', italic: true },
+        `${name}-bio`);
+    }
+  }
+
   return {
     phaseLabel, flowBox, flowArrow, numberedStep,
     infoCard, accentCard, overlayCard, fileCard, stepBox,
     iconStat, iconBox, bulletIconList, imageCard, twoColumnRow,
     progressBar, tagBadge, stepFlow, imageHolder,
+    calloutQuote, darkStat, challengeCard, teamCard,
   };
 }

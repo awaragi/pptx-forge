@@ -189,6 +189,18 @@ export const defaultTheme = {
       textColor:       'tx2',
     },
 
+    darkStat: {
+      bgColor:     'tx1',
+      valueColor:  'accent1',
+      labelColor:  'bg1',
+      sourceColor: 'accent6',
+    },
+
+    teamCard: {
+      avatarBgColor:   'accent6',
+      avatarTextColor: 'bg1',
+    },
+
     comparisonTable: {
       headerBgColor:   'tx1',
       headerTextColor: 'accent1',

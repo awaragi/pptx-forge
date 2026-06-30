@@ -3,6 +3,7 @@
 // Usage: npm run forge <workspace> [--open|-o] [--snapshot|-t] [--help|-h]
 
 import { readdir, mkdir, readFile, writeFile } from 'fs/promises';
+import { spawn } from 'child_process';
 import JSZip from 'jszip';
 import { resolve, join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
@@ -13,6 +14,7 @@ import open from 'open';
 const args = process.argv.slice(2);
 const helpFlag      = args.includes('--help')     || args.includes('-h');
 const openFlag      = args.includes('--open')     || args.includes('-o');
+const previewFlag   = args.includes('--preview')  || args.includes('-v');
 const snapshotFlag  = args.includes('--snapshot') || args.includes('-t');
 const workspaceSlug = args.find(a => !a.startsWith('-'));
 
@@ -26,12 +28,14 @@ Arguments:
 
 Options:
   -o, --open      Open the generated file after compiling
+  -v, --preview   Preview the generated file in QuickLook (macOS only)
   -t, --snapshot  Write to a timestamped filename instead of overwriting
   -h, --help      Show this help message
 
 Examples:
   npm run forge my-deck
   npm run forge my-deck --open
+  npm run forge my-deck --preview
   npm run forge my-deck --snapshot
   npm run forge my-deck --open --snapshot
 `;
@@ -111,4 +115,12 @@ console.log('  theme colors patched');
 
 if (openFlag) {
   await open(outPath);
+}
+
+if (previewFlag) {
+  if (process.platform !== 'darwin') {
+    console.warn('Warning: --preview is only supported on macOS.');
+  } else {
+    spawn('qlmanage', ['-p', outPath], { detached: true, stdio: 'ignore' }).unref();
+  }
 }
