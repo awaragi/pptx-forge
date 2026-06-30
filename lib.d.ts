@@ -65,11 +65,106 @@ export interface PhaseBoxContent    { label: string; steps: string[]; }
 export interface ArtifactCardContent { filename: string; purpose: string; step: string; }
 export interface NumberedStepContent { num: number; title: string; body: string; }
 export interface DarkPanelHeaderContent { title: string; subtitle?: string; }
-export interface AccentBlockContent { bgColor: string; border?: string; accent: string; title?: string; titleColor?: string; }
 export interface FlowBoxContent     { label: string; highlight?: boolean; }
 
-// Return type for accentBlock — lets callers position content inside the block
-export interface AccentBlockRegion  { ix: number; iw: number; contentY: number; }
+// ── theme.shape interfaces ────────────────────────────────────────────────────
+
+export interface CardShape {
+  bgColor:     string;
+  borderColor: string;
+  accentColor: string;
+  titleColor:  string;
+  bodyColor:   string;
+  shadow:      ShadowOpts;
+}
+
+export interface ArtifactCardShape {
+  bgColor:       string;
+  borderColor:   string;
+  filenameColor: string;
+  purposeColor:  string;
+  stepColor:     string;
+}
+
+export interface MiniCardShape {
+  titleColor: string;
+  bodyColor:  string;
+}
+
+export interface PhaseLabelShape {
+  badgeColor:     string;
+  badgeTextColor: string;
+  lineColor:      string;
+}
+
+export interface FlowBoxShape {
+  bgColor:            string;
+  borderColor:        string;
+  textColor:          string;
+  highlightBgColor:   string;
+  highlightTextColor: string;
+}
+
+export interface FlowArrowShape {
+  color: string;
+}
+
+export interface DividerShape {
+  color:          string;
+  badgeTextColor: string;
+  lineWidth:      number;
+  badgeW:         number;
+  badgeH:         number;
+  gap:            number;
+}
+
+export interface CalloutBannerShape {
+  bgColor:     string;
+  accentColor: string;
+  textColor:   string;
+  accentW:     number;
+}
+
+export interface DarkPanelHeaderShape {
+  bgColor:       string;
+  titleColor:    string;
+  subtitleColor: string;
+}
+
+export interface PullQuoteShape {
+  color: string;
+}
+
+export interface SectionTitleShape {
+  color: string;
+}
+
+export interface FrameShape {
+  badgeRadius:     number;
+  borderColor:     string;
+  badgeColor:      string;
+  badgeTextColor:  string;
+  wordmarkColor:   string;
+  footerLineColor: string;
+  footerTextColor: string;
+}
+
+export interface ThemeShape {
+  radius:          number;
+  borderW:         number;
+  card:            CardShape;
+  artifactCard:    ArtifactCardShape;
+  miniCard:        MiniCardShape;
+  phaseLabel:      PhaseLabelShape;
+  flowBox:         FlowBoxShape;
+  flowArrow:       FlowArrowShape;
+  divider:         DividerShape;
+  calloutBanner:   CalloutBannerShape;
+  darkPanelHeader: DarkPanelHeaderShape;
+  pullQuote:       PullQuoteShape;
+  sectionTitle:    SectionTitleShape;
+  frame:           FrameShape;
+}
 
 // ── Namespace groups ──────────────────────────────────────────────────────────
 
@@ -139,15 +234,6 @@ export interface PrimGroup {
 }
 
 export interface CompGroup {
-  /** Accent block with optional title. Returns inner content region. */
-  accentBlock(
-    slide: any,
-    box: { x: number; y: number; w: number; h: number },
-    content: AccentBlockContent,
-    opts?: Record<string, any>,
-    name?: string,
-  ): AccentBlockRegion;
-
   /** Phase label badge + horizontal rule. `box.x` is left edge, `box.w` is total span. */
   phaseLabel(
     slide: any,
@@ -323,7 +409,16 @@ export interface FrameGroup {
 
 export interface Lib {
   /** Merged theme object — access grid, size, color, font, shape constants. */
-  theme: any;
+  theme: {
+    scheme: Record<string, string>;
+    color:  Record<string, string>;
+    size:   Record<string, number>;
+    font:   { body: string; mono: string };
+    grid:   Record<string, number>;
+    header: { wordmark: string; badge: string };
+    footer: { left: string; right: string };
+    shape:  ThemeShape;
+  };
   /** Rich-text run helper. Use to build styled text runs for `prim.text`. */
   run:    RunHelper;
   prim:   PrimGroup;

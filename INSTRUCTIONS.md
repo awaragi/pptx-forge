@@ -50,6 +50,12 @@ npm run forge <workspace-slug>
 # e.g.
 npm run forge my-deck
 # aliases: npm run build my-deck, npm run generate my-deck
+
+# Flags must be separated from the script name with -- (npm requirement)
+npm run forge my-deck -- --open
+npm run forge my-deck -- --snapshot
+npm run forge my-deck -- --open --snapshot
+npm run forge -- --help
 ```
 
 ### How forge.js discovers slides
@@ -188,6 +194,57 @@ theme.font.body   // 'Arial'        — main text
 theme.font.mono   // 'Courier New'  — code/mono text
 ```
 
+### `theme.shape` — component visual defaults
+
+`theme.shape` holds per-component geometry and color defaults. Every component function reads its visual defaults from here, then `opts` overrides win at the per-call level.
+
+**Resolution order for any visual property:**
+```
+opts.<prop>  →  theme.shape.<namespace>.<prop>  →  (library default)
+```
+
+Global keys (apply across all components):
+
+| Key | Default | Notes |
+|-----|---------|-------|
+| `radius` | `0.08` | Rounded rectangle corner radius |
+| `borderW` | `0.8` | Default border/line stroke width |
+
+Component namespaces and their properties:
+
+| Namespace | Properties |
+|-----------|------------|
+| `card` | `bgColor`, `borderColor`, `accentColor`, `titleColor`, `bodyColor`, `shadow` — shared by `smallCard`, `benefitCard`, `phaseBox`, `numberedStep` |
+| `artifactCard` | `bgColor`, `borderColor`, `filenameColor`, `purposeColor`, `stepColor` |
+| `miniCard` | `titleColor`, `bodyColor` |
+| `phaseLabel` | `badgeColor`, `badgeTextColor`, `lineColor` |
+| `flowBox` | `bgColor`, `borderColor`, `textColor`, `highlightBgColor`, `highlightTextColor` |
+| `flowArrow` | `color` |
+| `divider` | `color`, `badgeTextColor`, `lineWidth`, `badgeW`, `badgeH`, `gap` |
+| `calloutBanner` | `bgColor`, `accentColor`, `textColor`, `accentW` |
+| `darkPanelHeader` | `bgColor`, `titleColor`, `subtitleColor` |
+| `pullQuote` | `color` |
+| `sectionTitle` | `color` |
+| `frame` | `badgeRadius`, `borderColor`, `badgeColor`, `badgeTextColor`, `wordmarkColor`, `footerLineColor`, `footerTextColor` |
+
+**Partial overrides** — export only the keys you want to change; all other properties keep their defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
+
+```js
+// theme.js — workspace shape customisation example
+export const shape = {
+  card: {
+    borderColor: 'accent4',       // change card borders from grey to blue
+    shadow: { opacity: 0.05 },    // reduce shadow intensity (other shadow fields kept)
+  },
+  divider: {
+    lineWidth: 2.0,               // thicker divider lines
+  },
+  frame: {
+    wordmarkColor: 'accent1',     // use primary accent for the wordmark
+  },
+};
+```
+
 ## `run` — rich-text runs
 
 `run` is a top-level lib export (alongside `prim`, `comp`, etc.). Use it to create mixed-style text in a single text frame. Returns a pptxgenjs run object `{ text, options }`.
@@ -225,7 +282,7 @@ export default function Slide01_Overview(pptx, lib) {
 
   // Further destructure groups as needed:
   const { text, roundRect, fillRect } = prim;
-  const { smallCard, phaseBox, accentBlock } = comp;
+  const { smallCard, phaseBox, flowBox } = comp;
   const { sectionTitle, darkPanelHeader } = layout;
   const { border, slideHeader, slideFooter } = frame;
 
@@ -270,25 +327,7 @@ Pre-built composite components — each renders multiple primitives with consist
 | `phaseBox` | `{ label, steps: string[] }` | Phase container; steps joined with ` · ` |
 | `flowBox` | `{ label, highlight?: boolean }` | Flow diagram box; `highlight: true` applies accent style |
 | `flowArrow` | `content` (unused) | Arrow connector; `opts.vertical: true` for ↓, default is → |
-| `accentBlock` | `{ bgColor, accent, border?, title?, titleColor? }` | Returns `AccentBlockRegion` — **capture the return value** |
 | `phaseLabel` | `label: string` (3rd arg, not object) | Badge + horizontal rule |
-
-### `accentBlock` return value
-
-`accentBlock` returns an `AccentBlockRegion` object for positioning content inside the block:
-```js
-const region = comp.accentBlock(slide,
-  { x: 0.73, y: 1.0, w: 5.85, h: 3.0 },
-  { bgColor: theme.color.surfaceAlt, accent: theme.color.primary, title: 'Section' },
-  {}, 's02-block'
-);
-// region = { ix, iw, contentY }
-// ix      = inner content left edge (x after accent strip)
-// iw      = inner content width
-// contentY = y to start placing content inside the block
-prim.text(slide, { x: region.ix, y: region.contentY, w: region.iw, h: 0.4 },
-  'Content inside block', {}, 's02-block-text');
-```
 
 ---
 

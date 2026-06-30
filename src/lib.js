@@ -45,25 +45,94 @@ const defaultTheme = {
   },
 
   shape: {
-    radius:    0.08,
-    radiusLg:  0.15,
-    borderW:   0.8,
-    accentW:   0.07,
-    shadow: {
-      type:    'outer',
-      color:   '1F2937',
-      opacity: 0.08,
-      blur:    1,
-      angle:   45,
-      offset:  1,
+    radius:  0.08,
+    borderW: 0.8,
+
+    card: {
+      bgColor:     'bg1',
+      borderColor: 'accent6',
+      accentColor: 'accent1',
+      titleColor:  'tx1',
+      bodyColor:   'tx2',
+      shadow: {
+        type:    'outer',
+        color:   '1F2937',
+        opacity: 0.08,
+        blur:    1,
+        angle:   45,
+        offset:  1,
+      },
     },
-    shadowDark: {
-      type:    'outer',
-      color:   '111827',
-      opacity: 0.22,
-      blur:    2,
-      angle:   45,
-      offset:  2,
+
+    artifactCard: {
+      bgColor:       'bg2',
+      borderColor:   'accent6',
+      filenameColor: 'accent1',
+      purposeColor:  'tx2',
+      stepColor:     'accent1',
+    },
+
+    miniCard: {
+      titleColor: 'accent1',
+      bodyColor:  'bg1',
+    },
+
+    phaseLabel: {
+      badgeColor:     'accent1',
+      badgeTextColor: 'bg1',
+      lineColor:      'accent6',
+    },
+
+    flowBox: {
+      bgColor:            'bg2',
+      borderColor:        'accent6',
+      textColor:          'tx2',
+      highlightBgColor:   'accent1',
+      highlightTextColor: 'bg1',
+    },
+
+    flowArrow: {
+      color: 'accent1',
+    },
+
+    divider: {
+      color:          'accent1',
+      badgeTextColor: 'bg1',
+      lineWidth:      1.5,
+      badgeW:         1.20,
+      badgeH:         0.24,
+      gap:            0.10,
+    },
+
+    calloutBanner: {
+      bgColor:     'tx1',
+      accentColor: 'accent1',
+      textColor:   'bg1',
+      accentW:     0.07,
+    },
+
+    darkPanelHeader: {
+      bgColor:       'tx1',
+      titleColor:    'accent1',
+      subtitleColor: 'bg1',
+    },
+
+    pullQuote: {
+      color: 'accent1',
+    },
+
+    sectionTitle: {
+      color: 'tx1',
+    },
+
+    frame: {
+      badgeRadius:     0.15,
+      borderColor:     'accent6',
+      badgeColor:      'accent1',
+      badgeTextColor:  'bg1',
+      wordmarkColor:   'accent5',
+      footerLineColor: 'accent6',
+      footerTextColor: 'accent5',
     },
   },
 
@@ -78,6 +147,18 @@ const defaultTheme = {
   },
 };
 
+function deepMerge(defaults, overrides) {
+  if (!overrides || typeof overrides !== 'object') return defaults;
+  const result = { ...defaults };
+  for (const key of Object.keys(overrides)) {
+    const isPlain = v => v && typeof v === 'object' && !Array.isArray(v);
+    result[key] = (isPlain(overrides[key]) && isPlain(defaults[key]))
+      ? deepMerge(defaults[key], overrides[key])
+      : overrides[key];
+  }
+  return result;
+}
+
 export function createLib(overrides = {}) {
   function run(textOrRun, opts = {}) {
     if (typeof textOrRun === 'string') {
@@ -89,13 +170,7 @@ export function createLib(overrides = {}) {
   run.italic = (textOrRun)           => run(textOrRun, { italic: true });
   run.color  = (textOrRun, colorVal) => run(textOrRun, { color: colorVal });
 
-  const theme = {
-    ...defaultTheme,
-    scheme: { ...defaultTheme.scheme, ...(overrides.scheme ?? {}) },
-    color:  { ...defaultTheme.color,  ...(overrides.color  ?? {}) },
-    header: { ...defaultTheme.header, ...(overrides.header ?? {}) },
-    footer: { ...defaultTheme.footer, ...(overrides.footer ?? {}) },
-  };
+  const theme = deepMerge(defaultTheme, overrides);
 
   // ── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -166,52 +241,34 @@ export function createLib(overrides = {}) {
 
   // ── Components ───────────────────────────────────────────────────────────────
 
-  function accentBlock(slide, box, { bgColor, border = bgColor, accent, title, titleColor = 'tx1' }, opts = {}, name) {
-    const { x, y, w, h } = box;
-    roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: bgColor },
-      line: { color: border, width: theme.shape.borderW },
-    }, `${name}-bg`);
-    fillRect(slide, { x, y, w: theme.shape.accentW, h }, undefined, {
-      fill: { color: accent },
-      line: { color: accent },
-    }, `${name}-accent`);
-    const ix = x + 0.26, iw = w - 0.36;
-    if (title) {
-      text(slide, { x: ix, y: y + 0.18, w: iw, h: 0.22 }, title,
-        { fontSize: theme.size.h6, bold: true, color: titleColor },
-        `${name}-title`);
-    }
-    return { ix, iw, contentY: y + (title ? 0.50 : 0.18) };
-  }
-
   // box: { x, y, w } — x is left edge, w is total span for the divider line
   function phaseLabel(slide, box, label, opts = {}, name) {
     const { x, y, w } = box;
     const bw = 1.72;
     roundRect(slide, { x, y, w: bw, h: 0.26 }, undefined, {
-      fill: { color: 'accent1' },
-      line: { color: 'accent1' },
+      fill: { color: theme.shape.phaseLabel.badgeColor },
+      line: { color: theme.shape.phaseLabel.badgeColor },
     }, `${name}-badge`);
     text(slide, { x, y, w: bw, h: 0.26 }, label,
-      { fontSize: theme.size.phaseLabel, bold: true, color: 'bg1', align: 'center', valign: 'middle' },
+      { fontSize: theme.size.phaseLabel, bold: true, color: theme.shape.phaseLabel.badgeTextColor, align: 'center', valign: 'middle' },
       `${name}-label`);
     hLine(slide, { x: x + bw + 0.10, y: y + 0.13, w: w - bw - 0.10 }, undefined,
-      { color: 'accent6', lineWidth: theme.shape.borderW },
+      { color: theme.shape.phaseLabel.lineColor, lineWidth: theme.shape.borderW },
       `${name}-line`);
   }
 
   function flowBox(slide, box, { label, highlight }, opts = {}, name) {
     const { x, y, w, h } = box;
+    const fb = theme.shape.flowBox;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: highlight ? 'accent1' : 'bg2' },
-      line: { color: highlight ? 'accent1' : 'accent6', width: theme.shape.borderW },
+      fill: { color: highlight ? fb.highlightBgColor : fb.bgColor },
+      line: { color: highlight ? fb.highlightBgColor : fb.borderColor, width: theme.shape.borderW },
     }, `${name}-bg`);
     text(slide, { x, y, w, h }, label,
       {
         fontSize: theme.size.badge,
         bold: highlight,
-        color: highlight ? 'bg1' : 'tx2',
+        color: highlight ? fb.highlightTextColor : fb.textColor,
         align: 'center',
         valign: 'middle',
       },
@@ -224,68 +281,70 @@ export function createLib(overrides = {}) {
     const { vertical = false } = opts;
     const [char, aw, ah] = vertical ? ['↓', 0.24, 0.28] : ['→', 0.22, 0.34];
     text(slide, { x, y, w: aw, h: ah }, char,
-      { fontSize: 10, bold: true, color: 'accent1', align: 'center' },
+      { fontSize: 10, bold: true, color: theme.shape.flowArrow.color, align: 'center' },
       name);
   }
 
   function smallCard(slide, box, { title, body }, opts = {}, name) {
     const { x, y, w, h } = box;
+    const { borderColor = theme.shape.card.borderColor, bodyColor = theme.shape.card.bodyColor } = opts;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: 'bg1' },
-      line: { color: 'accent6', width: theme.shape.borderW },
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: borderColor, width: theme.shape.borderW },
     }, `${name}-bg`);
     text(slide, { x: x + 0.16, y: y + 0.14, w: w - 0.24, h: 0.20 }, title,
-      { fontSize: theme.size.cardTitle, bold: true, color: 'tx1' },
+      { fontSize: theme.size.cardTitle, bold: true, color: theme.shape.card.titleColor },
       `${name}-title`);
     if (body) {
       text(slide, { x: x + 0.16, y: y + 0.40, w: w - 0.24, h: h - 0.50 }, body,
-        { fontSize: theme.size.xsmall, color: 'accent5' },
+        { fontSize: theme.size.xsmall, color: bodyColor },
         `${name}-body`);
     }
   }
 
   function artifactCard(slide, box, { filename, purpose, step }, opts = {}, name) {
     const { x, y, w, h } = box;
-    const { filenameColor = 'accent1' } = opts;
+    const { filenameColor = theme.shape.artifactCard.filenameColor } = opts;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: 'bg2' },
-      line: { color: 'accent6', width: theme.shape.borderW },
+      fill: { color: theme.shape.artifactCard.bgColor },
+      line: { color: theme.shape.artifactCard.borderColor, width: theme.shape.borderW },
     }, `${name}-bg`);
     text(slide, { x: x + 0.16, y: y + 0.14, w: w - 0.24, h: 0.22 }, filename,
       { fontSize: theme.size.small, bold: true, color: filenameColor, fontFace: theme.font.mono },
       `${name}-file`);
     text(slide, { x: x + 0.16, y: y + 0.42, w: w - 0.24, h: h - 0.72 }, purpose,
-      { fontSize: theme.size.xsmall, color: 'tx2' },
+      { fontSize: theme.size.xsmall, color: theme.shape.artifactCard.purposeColor },
       `${name}-purpose`);
     text(slide, { x: x + 0.16, y: y + h - 0.28, w: w - 0.24, h: 0.20 }, `→ ${step}`,
-      { fontSize: theme.size.badge, bold: true, color: 'accent1' },
+      { fontSize: theme.size.badge, bold: true, color: theme.shape.artifactCard.stepColor },
       `${name}-step`);
   }
 
   function benefitCard(slide, box, { title, body }, opts = {}, name) {
     const { x, y, w, h } = box;
+    const { borderColor = theme.shape.card.borderColor } = opts;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: 'bg1' },
-      line: { color: 'accent6', width: theme.shape.borderW },
-      shadow: { ...theme.shape.shadow },
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: borderColor, width: theme.shape.borderW },
+      shadow: { ...theme.shape.card.shadow },
     }, `${name}-bg`);
     roundRect(slide, { x, y, w, h: 0.06 }, undefined, {
       rectRadius: 0.03,
-      fill: { color: 'accent1' },
-      line: { color: 'accent1' },
+      fill: { color: theme.shape.card.accentColor },
+      line: { color: theme.shape.card.accentColor },
     }, `${name}-accent`);
     text(slide, { x: x + 0.22, y: y + 0.20, w: w - 0.32, h: 0.24 }, title,
-      { fontSize: theme.size.h5, bold: true, color: 'tx1' },
+      { fontSize: theme.size.h5, bold: true, color: theme.shape.card.titleColor },
       `${name}-title`);
     text(slide, { x: x + 0.22, y: y + 0.54, w: w - 0.32, h: h - 0.64 }, body,
-      { fontSize: theme.size.body, color: 'tx2' },
+      { fontSize: theme.size.body, color: theme.shape.card.bodyColor },
       `${name}-body`);
   }
 
   // w and h read from box — no longer hardcoded
   function miniCard(slide, box, { title, body }, opts = {}, name) {
     const { x, y, w, h } = box;
-    const { titleColor = 'accent1', bodyColor = 'bg1' } = opts;
+    const { titleColor = theme.shape.miniCard.titleColor, bodyColor = theme.shape.miniCard.bodyColor } = opts;
     roundRect(slide, { x, y, w, h }, undefined, {
       fill: { color: 'bg1', transparency: 88 },
       line: { color: 'bg1', transparency: 80, width: theme.shape.borderW },
@@ -301,45 +360,47 @@ export function createLib(overrides = {}) {
   // steps is string[] — joined with ' · ' internally
   function phaseBox(slide, box, { label, steps }, opts = {}, name) {
     const { x, y, w, h } = box;
+    const { borderColor = theme.shape.card.borderColor } = opts;
     const stepsText = Array.isArray(steps) ? steps.join(' · ') : steps;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: 'bg1' },
-      line: { color: 'accent6', width: theme.shape.borderW },
-      shadow: { ...theme.shape.shadow },
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: borderColor, width: theme.shape.borderW },
+      shadow: { ...theme.shape.card.shadow },
     }, `${name}-bg`);
     roundRect(slide, { x, y, w, h: 0.06 }, undefined, {
       rectRadius: 0.03,
-      fill: { color: 'accent1' },
-      line: { color: 'accent1' },
+      fill: { color: theme.shape.card.accentColor },
+      line: { color: theme.shape.card.accentColor },
     }, `${name}-accent`);
     text(slide, { x: x + 0.22, y: y + 0.16, w: w - 0.32, h: 0.22 }, label,
-      { fontSize: theme.size.sectionLabel, bold: true, color: 'tx1' },
+      { fontSize: theme.size.sectionLabel, bold: true, color: theme.shape.card.titleColor },
       `${name}-label`);
     text(slide, { x: x + 0.22, y: y + 0.46, w: w - 0.32, h: 0.65 }, stepsText,
-      { fontSize: theme.size.body, color: 'tx2' },
+      { fontSize: theme.size.body, color: theme.shape.card.bodyColor },
       `${name}-steps`);
   }
 
   // h read from box — no longer hardcoded
   function numberedStep(slide, box, { num, title, body }, opts = {}, name) {
     const { x, y, w, h } = box;
+    const { borderColor = theme.shape.card.borderColor, bodyColor = theme.shape.card.bodyColor } = opts;
     roundRect(slide, { x, y, w, h }, undefined, {
-      fill: { color: 'bg1' },
-      line: { color: 'accent6', width: theme.shape.borderW },
-      shadow: { ...theme.shape.shadow },
+      fill: { color: theme.shape.card.bgColor },
+      line: { color: borderColor, width: theme.shape.borderW },
+      shadow: { ...theme.shape.card.shadow },
     }, `${name}-bg`);
     circle(slide, { x: x + 0.19, y: y + 0.20, w: 0.28 }, undefined, {
-      fill: { color: 'accent1' },
-      line: { color: 'accent1' },
+      fill: { color: theme.shape.card.accentColor },
+      line: { color: theme.shape.card.accentColor },
     }, `${name}-circle`);
     text(slide, { x: x + 0.19, y: y + 0.265, w: 0.28, h: 0.1 }, String(num),
-      { fontSize: 9, bold: true, color: 'bg1', align: 'center' },
+      { fontSize: 9, bold: true, color: theme.shape.card.bgColor, align: 'center' },
       `${name}-num`);
     text(slide, { x: x + 0.50, y: y + 0.25, w: w - 0.65, h: 0.2 }, title,
-      { fontSize: theme.size.cardTitle, bold: true, color: 'tx1' },
+      { fontSize: theme.size.cardTitle, bold: true, color: theme.shape.card.titleColor },
       `${name}-title`);
     text(slide, { x: x + 0.20, y: y + 0.62, w: w - 0.35, h: 0.35 }, body,
-      { fontSize: theme.size.badge, color: 'tx2' },
+      { fontSize: theme.size.badge, color: bodyColor },
       `${name}-body`);
   }
 
@@ -348,7 +409,7 @@ export function createLib(overrides = {}) {
   // box fields default to theme grid values when omitted
   function sectionTitle(slide, box, content, opts = {}, name) {
     const { x = theme.grid.marginX, y = theme.grid.contentTop, w = theme.grid.contentW, h = 0.34 } = box ?? {};
-    const { fontSize = theme.size.h2, color = 'tx1', ...rest } = opts;
+    const { fontSize = theme.size.h2, color = theme.shape.sectionTitle.color, ...rest } = opts;
     text(slide, { x, y, w, h }, content, { fontSize, bold: true, color, ...rest }, name);
   }
 
@@ -356,10 +417,10 @@ export function createLib(overrides = {}) {
   function darkPanelHeader(slide, box, { title, subtitle }, opts = {}, name) {
     const { x, y, w, h: boxH = 0.44 } = box;
     const {
-      bgColor = 'tx1',
+      bgColor = theme.shape.darkPanelHeader.bgColor,
       borderColor,
-      titleColor = 'accent1',
-      subtitleColor = 'bg1',
+      titleColor = theme.shape.darkPanelHeader.titleColor,
+      subtitleColor = theme.shape.darkPanelHeader.subtitleColor,
       titleW = 1.60,
     } = opts;
     const h = boxH;
@@ -383,12 +444,13 @@ export function createLib(overrides = {}) {
   function labeledDivider(slide, box, label, opts = {}, name) {
     const { x, y: y1, h } = box;
     const y2 = y1 + h;
+    const dv = theme.shape.divider;
     const {
-      color = 'accent1',
-      lineWidth = 1.5,
-      badgeW = 1.20,
-      badgeH = 0.24,
-      gap = 0.10,
+      color    = dv.color,
+      lineWidth = dv.lineWidth,
+      badgeW   = dv.badgeW,
+      badgeH   = dv.badgeH,
+      gap      = dv.gap,
     } = opts;
     const midY = y1 + (y2 - y1) / 2 - badgeH / 2;
     const bx = x - badgeW / 2;
@@ -396,7 +458,7 @@ export function createLib(overrides = {}) {
     roundRect(slide, { x: bx, y: midY, w: badgeW, h: badgeH }, undefined,
       { fill: { color }, line: { color } }, `${name}-badge`);
     text(slide, { x: bx, y: midY, w: badgeW, h: badgeH }, label,
-      { fontSize: theme.size.caption, bold: true, color: 'bg1', align: 'center', valign: 'middle' },
+      { fontSize: theme.size.caption, bold: true, color: dv.badgeTextColor, align: 'center', valign: 'middle' },
       `${name}-badge-txt`);
     vLine(slide, { x, y: midY + badgeH + gap, h: y2 - (midY + badgeH + gap) }, undefined,
       { color, lineWidth }, `${name}-bot`);
@@ -404,18 +466,19 @@ export function createLib(overrides = {}) {
 
   function calloutBanner(slide, box, content, opts = {}, name) {
     const { x, y, w, h } = box;
+    const cb = theme.shape.calloutBanner;
     const {
-      bgColor = 'tx1',
-      accent = 'accent1',
-      textColor = 'bg1',
-      fontSize = theme.size.bodyLg,
-      italic = true,
-      bold = true,
-      align = 'center',
+      bgColor   = cb.bgColor,
+      accent    = cb.accentColor,
+      textColor = cb.textColor,
+      fontSize  = theme.size.bodyLg,
+      italic    = true,
+      bold      = true,
+      align     = 'center',
     } = opts;
     const val = unpack(content, 'text');
     roundRect(slide, { x, y, w, h }, undefined, { fill: { color: bgColor }, line: { color: bgColor } }, `${name}-bg`);
-    fillRect(slide, { x, y, w: theme.shape.accentW, h }, undefined, { fill: { color: accent }, line: { color: accent } }, `${name}-accent`);
+    fillRect(slide, { x, y, w: cb.accentW, h }, undefined, { fill: { color: accent }, line: { color: accent } }, `${name}-accent`);
     text(slide, { x: x + 0.26, y, w: w - 0.36, h }, val,
       { fontSize, bold, italic, color: textColor, valign: 'middle', align },
       `${name}-text`);
@@ -425,7 +488,7 @@ export function createLib(overrides = {}) {
   function pullQuote(slide, box, content, opts = {}, name) {
     const { x, y, w, h } = box;
     const {
-      color = 'accent1',
+      color = theme.shape.pullQuote.color,
       fontSize = theme.size.pullQuote,
       italic = true,
       bold = false,
@@ -441,7 +504,7 @@ export function createLib(overrides = {}) {
   function border(slide, box, opts = {}, name) {
     roundRect(slide, { x: 0.12, y: 0.12, w: 13.09, h: 7.26 }, undefined, {
       fill: { color: 'bg1', transparency: 100 },
-      line: { color: 'accent6', width: theme.shape.borderW },
+      line: { color: theme.shape.frame.borderColor, width: theme.shape.borderW },
     }, name);
   }
 
@@ -449,30 +512,32 @@ export function createLib(overrides = {}) {
   // name is a slide-level prefix (e.g. 's01'); sub-element names are derived from it
   function slideHeader(slide, box, opts = {}, name) {
     const pfx = name ?? 'header';
+    const fr = theme.shape.frame;
     text(slide, { x: theme.grid.marginX, y: 0.42, w: 5.5, h: 0.25 }, theme.header.wordmark,
-      { fontSize: theme.size.sectionLabel, bold: true, color: 'accent5', charSpace: 1.4 },
+      { fontSize: theme.size.sectionLabel, bold: true, color: fr.wordmarkColor, charSpace: 1.4 },
       `${pfx}-header-wordmark`);
     roundRect(slide, { x: 11.65, y: 0.31, w: 1.0, h: 0.36 }, undefined, {
-      rectRadius: theme.shape.radiusLg,
-      fill: { color: 'accent1' },
-      line: { color: 'accent1' },
+      rectRadius: fr.badgeRadius,
+      fill: { color: fr.badgeColor },
+      line: { color: fr.badgeColor },
     }, `${pfx}-header-badge`);
     text(slide, { x: 11.65, y: 0.405, w: 1.0, h: 0.17 }, theme.header.badge,
-      { fontSize: theme.size.sectionLabel, bold: true, color: 'bg1', align: 'center' },
+      { fontSize: theme.size.sectionLabel, bold: true, color: fr.badgeTextColor, align: 'center' },
       `${pfx}-header-badge-text`);
   }
 
   // box is ignored — renders at fixed position; pass undefined
   function slideFooter(slide, box, opts = {}, name) {
     const pfx = name ?? 'footer';
+    const fr = theme.shape.frame;
     hLine(slide, { x: theme.grid.marginX, y: theme.grid.footerY, w: theme.grid.contentW }, undefined,
-      { color: 'accent6', lineWidth: theme.shape.borderW },
+      { color: fr.footerLineColor, lineWidth: theme.shape.borderW },
       `${pfx}-footer-rule`);
     text(slide, { x: theme.grid.marginX, y: 7.31, w: 5.5, h: 0.12 }, theme.footer.left,
-      { fontSize: theme.size.caption, color: 'accent5' },
+      { fontSize: theme.size.caption, color: fr.footerTextColor },
       `${pfx}-footer-left`);
     text(slide, { x: 7.9, y: 7.31, w: 4.7, h: 0.12 }, theme.footer.right,
-      { fontSize: theme.size.caption, color: 'accent5', align: 'right' },
+      { fontSize: theme.size.caption, color: fr.footerTextColor, align: 'right' },
       `${pfx}-footer-right`);
   }
 
@@ -480,7 +545,7 @@ export function createLib(overrides = {}) {
     theme,
     run,
     prim:   { text, roundRect, fillRect, circle, hLine, vLine, bullets },
-    comp:   { accentBlock, phaseLabel, flowBox, flowArrow, smallCard, artifactCard, benefitCard, miniCard, phaseBox, numberedStep },
+    comp:   { phaseLabel, flowBox, flowArrow, smallCard, artifactCard, benefitCard, miniCard, phaseBox, numberedStep },
     layout: { sectionTitle, darkPanelHeader, labeledDivider, calloutBanner, pullQuote },
     frame:  { border, slideHeader, slideFooter },
   };

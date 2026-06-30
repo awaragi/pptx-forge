@@ -53,11 +53,13 @@ Output: `workspaces/my-deck/out/my-deck.pptx`
 | `--snapshot` | `-t` | Write to a timestamped file (`my-deck_2026-06-29_14-30-00.pptx`) instead of overwriting |
 | `--help` | `-h` | Show usage and exit |
 
+> **Note:** Due to how npm parses arguments, flags must be separated from the script name with `--`.
+
 ```bash
-npm run forge my-deck --open            # compile and open
-npm run forge my-deck --snapshot        # timestamped output
-npm run forge my-deck --open --snapshot # both
-npm run forge -- --help                 # show help
+npm run forge my-deck -- --open            # compile and open
+npm run forge my-deck -- --snapshot        # timestamped output
+npm run forge my-deck -- --open --snapshot # both
+npm run forge -- --help                    # show help
 ```
 
 ## Backup
@@ -87,6 +89,10 @@ export default function Slide01_Title(pptx, lib) {
 ```
 
 For AI-assisted authoring, share `INSTRUCTIONS.md` and `lib.d.ts` with your model. These two files contain everything needed to generate correct slide files.
+
+## Versioning
+
+pptx-forge makes no backward compatibility guarantees between versions. The tool's purpose is to generate a `.pptx` and move on — a workspace is a point-in-time artifact, not a long-lived application. When the library changes, existing slide files may need updating. New projects should start from the current version.
 
 ## License
 
