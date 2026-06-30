@@ -40,4 +40,4 @@ console.log(`  workspaces/${name}/slides/deck.js`);
 console.log(`\nNext steps:`);
 console.log(`  Edit workspaces/${name}/theme.js to set your colors, header, and footer.`);
 console.log(`  Edit workspaces/${name}/slides/deck.js or add new slide files.`);
-console.log(`  Run: node bin/compile.js ${name}`);
+console.log(`  Run: npm run forge ${name}`);

@@ -1,10 +1,10 @@
-# pptx-forget
+# pptx-forge
 
 Compile JavaScript slide files into PowerPoint decks. Author slides as plain `.js` files using a design-system API — no PowerPoint, no drag-and-drop.
 
 ## How it works
 
-Each workspace is a folder under `workspaces/`. You write slide files in `workspaces/<slug>/slides/`, optionally define a color scheme in `theme.js`, and run compile to get a `.pptx`.
+Each workspace is a folder under `workspaces/`. You write slide files in `workspaces/<slug>/slides/`, optionally define a color scheme in `theme.js`, and run forge to get a `.pptx`.
 
 ```
 workspaces/my-deck/
@@ -29,24 +29,41 @@ npm install
 ## Create a workspace
 
 ```bash
-node bin/create.js
+npm run create
 # Workspace name: my-deck
 ```
 
 Copies the starter template into `workspaces/my-deck/` and prints next steps.
 
-## Compile
+## Forge
 
 ```bash
-node bin/compile.js my-deck
+npm run forge my-deck
 ```
 
+Aliases: `npm run build my-deck`, `npm run generate my-deck`
+
 Output: `workspaces/my-deck/out/my-deck.pptx`
+
+### Options
+
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--open` | `-o` | Open the generated file in the default app after compiling |
+| `--snapshot` | `-t` | Write to a timestamped file (`my-deck_2026-06-29_14-30-00.pptx`) instead of overwriting |
+| `--help` | `-h` | Show usage and exit |
+
+```bash
+npm run forge my-deck --open            # compile and open
+npm run forge my-deck --snapshot        # timestamped output
+npm run forge my-deck --open --snapshot # both
+npm run forge -- --help                 # show help
+```
 
 ## Backup
 
 ```bash
-node bin/backup.js my-deck
+npm run backup my-deck
 ```
 
 Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.zip`.

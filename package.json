@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "compile": "node bin/compile.js",
+    "forge": "node bin/forge.js",
+    "build": "node bin/forge.js",
+    "generate": "node bin/forge.js",
     "backup": "node bin/backup.js",
     "create": "node bin/create.js"
   },
   "dependencies": {
     "archiver": "^8.0.0",
     "jszip": "^3.10.1",
+    "open": "^11.0.0",
     "pptxgenjs": "^3.12.0"
   }
 }

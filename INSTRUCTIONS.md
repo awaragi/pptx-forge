@@ -21,11 +21,11 @@ See [pptxgenjs Boundary](#pptxgenjs-boundary) for what slide files interact with
 ## Project Layout
 
 ```
-pptx-forget/
+pptx-forge/
 ├── src/
 │   └── lib.js          # Design-system library — createLib(themeOverrides)
 ├── bin/
-│   ├── compile.js      # Orchestrator — discovers slide files, runs them, writes .pptx
+│   ├── forge.js        # Orchestrator — discovers slide files, runs them, writes .pptx
 │   ├── backup.js       # Backup — zips workspace slides into a timestamped archive
 │   └── create.js       # Scaffold — prompts for a name and creates a new workspace
 ├── lib.d.ts            # TypeScript declarations — authoritative signatures
@@ -36,22 +36,23 @@ pptx-forget/
         ├── slides/     # All slide files live here (any .js filename, sorted alphabetically)
         │   ├── 01-overview.js
         │   └── 02-problem.js
-        └── out/        # Generated — created by compile.js
+        └── out/        # Generated — created by forge.js
             └── <slug>.pptx
 ```
 
 ---
 
-## Compile Pipeline
+## Forge Pipeline
 
 ### Running a workspace
 ```bash
-node bin/compile.js <workspace-slug>
+npm run forge <workspace-slug>
 # e.g.
-node bin/compile.js my-deck
+npm run forge my-deck
+# aliases: npm run build my-deck, npm run generate my-deck
 ```
 
-### How compile.js discovers slides
+### How forge.js discovers slides
 - Scans `workspaces/<slug>/slides/` for all `.js` files — no naming format required
 - Sorts alphabetically — filename order equals presentation order
 - Imports each file and calls its default export with `(pptx, lib)`
@@ -63,7 +64,7 @@ No filename format is enforced. Files are loaded in alphabetic sort order, so us
 02-problem.js
 03-approach.js
 ```
-The `slides/` directory is the only place compile.js looks. `theme.js` stays at the workspace root and is never treated as a slide file.
+The `slides/` directory is the only place forge.js looks. `theme.js` stays at the workspace root and is never treated as a slide file.
 
 ### Slide file module contract
 Every slide file must:
@@ -423,4 +424,4 @@ export default function Example(pptx, lib) {
 }
 ```
 
-**To test:** save the file in `workspaces/<slug>/slides/` and run `node bin/compile.js <slug>`. The output `.pptx` will appear in `workspaces/<slug>/out/`.
+**To test:** save the file in `workspaces/<slug>/slides/` and run `npm run forge <slug>`. The output `.pptx` will appear in `workspaces/<slug>/out/`.

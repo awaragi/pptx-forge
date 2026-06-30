@@ -1,16 +1,29 @@
 #!/usr/bin/env node
 // Backs up all slide and theme files for a workspace into a timestamped zip.
-// Usage: node bin/backup.js <workspace-slug>
+// Usage: npm run backup <workspace> [--help|-h]
 
 import { createWriteStream, mkdirSync } from 'fs';
 import { resolve, join } from 'path';
 import { fileURLToPath } from 'url';
 import { ZipArchive } from 'archiver';
 
-const [,, workspaceSlug] = process.argv;
-if (!workspaceSlug) {
-  console.error('Usage: node bin/backup.js <workspace-slug>');
-  process.exit(1);
+const args = process.argv.slice(2);
+const helpFlag      = args.includes('--help') || args.includes('-h');
+const workspaceSlug = args.find(a => !a.startsWith('-'));
+
+const HELP = `\
+Usage: npm run backup <workspace>
+
+Arguments:
+  <workspace>   Name of the workspace to back up (e.g. my-deck)
+
+Options:
+  -h, --help    Show this help message
+`;
+
+if (helpFlag || !workspaceSlug) {
+  process.stdout.write(HELP);
+  process.exit(0);
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url));
