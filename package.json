@@ -8,8 +8,8 @@
     "generate": "node bin/forge.js",
     "backup": "node bin/backup.js",
     "create": "node bin/create.js",
-    "release:prepare": "node scripts/version.mjs",
-    "release": "node scripts/publish.mjs"
+    "release:prepare": "node scripts/version.js",
+    "release": "node scripts/publish.js"
   },
   "author": "Pierre Awaragi <pierre@awaragi.com>",
   "copyright": "Copyright (c) 2026 Pierre Awaragi",

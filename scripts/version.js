@@ -37,13 +37,13 @@ export function bumpVersion(type, { commit = false } = {}) {
   return next;
 }
 
-// Run as standalone script: node scripts/version.mjs <major|minor|patch> [--commit]
+// Run via: npm run release:prepare <major|minor|patch> [-- --commit]
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const type = args.find((a) => !a.startsWith('--'));
   const commit = args.includes('--commit');
   if (!type) {
-    console.error('Usage: node scripts/version.mjs <major|minor|patch> [--commit]');
+    console.error('Usage: npm run release:prepare <major|minor|patch> [-- --commit]');
     process.exit(1);
   }
   try {

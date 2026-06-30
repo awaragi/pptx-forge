@@ -7,29 +7,29 @@ Defines the local scripts and CI workflow for versioning and distributing pptx-f
 ## Requirements
 
 ### Requirement: Version bump script
-A `scripts/version.mjs` script SHALL bump the version field in `package.json` by a given increment type (`major`, `minor`, or `patch`) and optionally commit the change.
+A `scripts/version.js` script SHALL bump the version field in `package.json` by a given increment type (`major`, `minor`, or `patch`) and optionally commit the change.
 
 #### Scenario: Patch bump without commit
-- **WHEN** the developer runs `node scripts/version.mjs patch`
+- **WHEN** the developer runs `node scripts/version.js patch`
 - **THEN** `package.json` version is incremented by one patch (e.g. `1.0.0` → `1.0.1`), the file is written to disk, and the new version is printed to stdout
 
 #### Scenario: Minor bump with commit
-- **WHEN** the developer runs `node scripts/version.mjs minor --commit`
+- **WHEN** the developer runs `node scripts/version.js minor --commit`
 - **THEN** `package.json` version is incremented by one minor (e.g. `1.0.1` → `1.1.0`), a git commit is created with message `chore: bump version to <new-version>`, and the new version is printed to stdout
 
 #### Scenario: Invalid type argument
-- **WHEN** the developer runs `node scripts/version.mjs` with no type argument or an unknown type
+- **WHEN** the developer runs `node scripts/version.js` with no type argument or an unknown type
 - **THEN** the script exits with a non-zero code and prints usage instructions
 
 ### Requirement: Publish script
-A `scripts/publish.mjs` script SHALL tag the current version from `package.json` and push the tag to the remote, triggering the CI release workflow.
+A `scripts/publish.js` script SHALL tag the current version from `package.json` and push the tag to the remote, triggering the CI release workflow.
 
 #### Scenario: Clean state publish
-- **WHEN** the developer runs `node scripts/publish.mjs` with `package.json` committed and no existing tag for the current version
+- **WHEN** the developer runs `node scripts/publish.js` with `package.json` committed and no existing tag for the current version
 - **THEN** the script pushes the current branch, creates a git tag equal to the version string (e.g. `1.0.1`), pushes the tag to origin, and prints a confirmation message
 
 #### Scenario: Uncommitted version file
-- **WHEN** `package.json` has uncommitted changes when `publish.mjs` runs
+- **WHEN** `package.json` has uncommitted changes when `publish.js` runs
 - **THEN** the script exits with a non-zero code and an error message before creating any tag or pushing
 
 #### Scenario: Tag already exists
@@ -41,11 +41,11 @@ A `scripts/publish.mjs` script SHALL tag the current version from `package.json`
 
 #### Scenario: Prepare a patch release
 - **WHEN** the developer runs `npm run release:prepare patch`
-- **THEN** `node scripts/version.mjs patch` is executed with any additional arguments forwarded
+- **THEN** `node scripts/version.js patch` is executed with any additional arguments forwarded
 
 #### Scenario: Publish a release
 - **WHEN** the developer runs `npm run release`
-- **THEN** `node scripts/publish.mjs` is executed
+- **THEN** `node scripts/publish.js` is executed
 
 ### Requirement: GitHub Actions release workflow
 A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags matching the pattern `[0-9]+.[0-9]+.[0-9]+`, create a zip archive of the repository using `git archive`, and publish a GitHub release with the archive and auto-generated notes.

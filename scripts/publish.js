@@ -1,5 +1,5 @@
 import { execSync } from 'child_process';
-import { currentVersion, ROOT } from './version.mjs';
+import { currentVersion, ROOT } from './version.js';
 
 function run(cmd) {
   execSync(cmd, { cwd: ROOT, stdio: 'inherit' });
