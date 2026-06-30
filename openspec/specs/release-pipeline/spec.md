@@ -56,11 +56,11 @@ A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags match
 
 #### Scenario: Release archive excludes dev directories
 - **WHEN** the zip is extracted
-- **THEN** it does NOT contain `openspec/`, `.claude/`, or `scripts/` directories, but DOES contain `src/`, `bin/`, `package.json`, `package-lock.json`, `lib.d.ts`, `README.md`, `INSTRUCTIONS.md`, and `LICENSE`
+- **THEN** it does NOT contain `openspec/`, `.claude/`, `scripts/`, `.github/`, `.gitattributes`, or `.gitignore`, but DOES contain `src/`, `bin/`, `package.json`, `package-lock.json`, `lib.d.ts`, `README.md`, `INSTRUCTIONS.md`, and `LICENSE`
 
 ### Requirement: gitattributes export-ignore markers
-A `.gitattributes` file SHALL mark `openspec/`, `.claude/`, and `scripts/` directories with the `export-ignore` attribute so they are excluded by `git archive`.
+A `.gitattributes` file SHALL mark `openspec/`, `.claude/`, `scripts/`, `.github/`, `.gitattributes`, and `.gitignore` with the `export-ignore` attribute so they are excluded by `git archive`.
 
 #### Scenario: git archive respects export-ignore
 - **WHEN** `git archive HEAD` is run against the repository
-- **THEN** the resulting archive contains no files under `openspec/`, `.claude/`, or `scripts/`
+- **THEN** the resulting archive contains no files under `openspec/`, `.claude/`, `scripts/`, or `.github/`, and contains no `.gitattributes` or `.gitignore` files
