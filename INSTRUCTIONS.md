@@ -1,95 +1,49 @@
 # INSTRUCTIONS.md — AI Slide Authoring Reference
 
-> Read this file alongside `lib.d.ts` to generate correct, compilable slide files.
-> `lib.d.ts` is the authoritative type source for every function signature.
-> This file explains the system, conventions, and patterns that types alone cannot.
+> Read this file alongside `lib.d.ts(.txt)` to generate correct, compilable slide files.
 
 ---
 
 ## Overview
 
-This project compiles JavaScript slide files into PowerPoint decks using [pptxgenjs](https://gitbrent.github.io/PptxGenJS/). The authoring layer (`lib.js`) wraps pptxgenjs in a design-system API — slide files do not need to call pptxgenjs directly.
+JavaScript slide files compile into PowerPoint decks via [pptxgenjs](https://gitbrent.github.io/PptxGenJS/). `lib.js` wraps pptxgenjs in a design-system API.
 
-**As an AI, you only need these two files to generate slides:**
-1. `INSTRUCTIONS.md` (this file) — system conventions, patterns, examples
-2. `lib.d.ts` — full typed signatures for every `lib` function
+**You only need two files:** `INSTRUCTIONS.md` (this file) and `lib.d.ts(.txt)` (authoritative typed signatures).
 
-See [pptxgenjs Boundary](#pptxgenjs-boundary) for what slide files interact with directly vs. through `lib`.
+**Creative freedom:** Built-in `lib` components are a starting point, not a constraint. If a concept calls for a layout or visual treatment the library doesn't cover, implement it — write custom helpers in the slide file, compose `prim` calls freely, or drop to raw pptxgenjs. The goal is the best slide for the concept, not maximum use of the component library.
 
 ---
 
-## Project Layout
+## Workspace Structure
 
 ```
-pptx-forge/
-├── src/
-│   └── lib.js          # Design-system library — createLib(themeOverrides)
-├── bin/
-│   ├── forge.js        # Orchestrator — discovers slide files, runs them, writes .pptx
-│   ├── backup.js       # Backup — zips workspace slides into a timestamped archive
-│   └── create.js       # Scaffold — prompts for a name and creates a new workspace
-├── lib.d.ts            # TypeScript declarations — authoritative signatures
-├── INSTRUCTIONS.md     # This file
-└── workspaces/
-    └── <slug>/
-        ├── theme.js    # Optional — workspace color scheme + header/footer text
-        ├── slides/     # All slide files live here (any .js filename, sorted alphabetically)
-        │   ├── 01-overview.js
-        │   └── 02-problem.js
-        └── out/        # Generated — created by forge.js
-            └── <slug>.pptx
+workspaces/<slug>/
+├── theme.js       # optional — color scheme + header/footer text
+└── slides/        # all .js files here, sorted alphabetically → slide order
 ```
 
----
+Build: `npm run forge <slug> [-- --open]`
 
-## Forge Pipeline
+### Before generating slides — ask the user
 
-### Running a workspace
-```bash
-npm run forge <workspace-slug>
-# e.g.
-npm run forge my-deck
-# aliases: npm run build my-deck, npm run generate my-deck
+> **One file per slide, or a single deck file?**
+> - **One file per slide** (e.g. `01-title.js`, `02-problem.js`) — easier to navigate and reorder
+> - **Single deck file** (e.g. `deck.js`) — simpler for short decks
 
-# Flags must be separated from the script name with -- (npm requirement)
-npm run forge my-deck -- --open
-npm run forge my-deck -- --preview         # QuickLook preview, -v (macOS only)
-npm run forge my-deck -- --snapshot
-npm run forge my-deck -- --open --snapshot
-npm run forge -- --help
-```
+Default to **one file per slide** for decks with more than 3 slides.
 
-### How forge.js discovers slides
-- Scans `workspaces/<slug>/slides/` for all `.js` files — no naming format required
-- Sorts alphabetically — filename order equals presentation order
-- Imports each file and calls its default export with `(pptx, lib)`
+### Deck/Slide file contract
 
-### Slide file naming
-No filename format is enforced. Files are loaded in alphabetic sort order, so use any naming scheme that sorts correctly for the desired slide order. A common convention is zero-padded numbers:
-```
-01-overview.js
-02-problem.js
-03-approach.js
-```
-The `slides/` directory is the only place forge.js looks. `theme.js` stays at the workspace root and is never treated as a slide file.
-
-### Slide file module contract
-Every slide file must:
-1. Export a **default function** with signature `(pptx, lib)`
-2. Call `pptx.addSlide()` for each slide it creates
-3. Render all content using `lib`
-
-Typically each file contains one slide. Multiple slides per file are allowed — call `pptx.addSlide()` multiple times, once per slide.
+Every deck/slide file exports a default function `(pptx, lib)`. 
 
 ```js
-// slide01-overview.js  — typical: one slide per file
-export default function Slide01_Overview(pptx, lib) {
+export default function Slide_Or_Deck(pptx, lib) { // or Deck(pptx, lib) for a single-file deck
   const slide = pptx.addSlide();
-  // ... render content to slide using lib
+  slide.background = { color: theme.scheme.dk1 }; // optional
+  // render content via lib...
 }
 ```
 
-Function naming convention: `SlideNN_TopicName` (PascalCase topic, matching the file number).
 
 ---
 
@@ -118,25 +72,13 @@ Always use `theme.grid.*` constants rather than hardcoding these numbers.
 
 ### The `box` parameter
 
-All lib functions take a `box` as their second argument:
-```js
-{ x: number, y: number, w: number, h: number }  // all in inches
-```
-
-When a geometry field is not used by a function (documented in `lib.d.ts`), pass `-1` or omit it:
-```js
-hLine(slide, { x: 0.73, y: 2.0, w: 11.87 }, ...)       // h unused — omit it
-circle(slide, { x: 1.0, y: 1.0, w: 0.5 }, ...)          // h unused — omit it
-vLine(slide, { x: 6.67, y: 1.0, h: 5.0 }, ...)          // w unused — omit it
-```
+All lib functions take `{ x, y, w, h }` (Box object in inches) as their second argument. Omit or pass `-1` for geometry fields unused by a given function (noted in `lib.d.ts`).
 
 ---
 
 ## Theme Object
 
-`theme` is the merged theme object returned by `createLib(themeOverrides)`. It is **not** a function group — it is a plain data object.
-
-### Shape
+`theme` is a plain data object.
 
 ```js
 theme.scheme   // 10 PowerPoint scheme slot hex values
@@ -150,17 +92,7 @@ theme.footer   // { left, right }    — used by frame.slideFooter
 
 ### `theme.scheme` — PowerPoint scheme slots
 
-```js
-theme.scheme = {
-  dk1: '111827',  lt1: 'FFFFFF',   // Dark 1 / Light 1
-  dk2: '374151',  lt2: 'F9FAFB',   // Dark 2 / Light 2
-  accent1: '86BC25', accent2: 'EF4444',
-  accent3: 'F59E0B', accent4: '5B9BD5',
-  accent5: '70AD47', accent6: 'A5A5A5',
-}
-```
-
-Lib component defaults use scheme-slot string shorthands (`'accent1'`, `'tx1'`, `'bg1'`, etc.) — pptxgenjs resolves these to the actual hex at render time.
+Ten slots: `dk1`, `lt1`, `dk2`, `lt2`, `accent1`–`accent6`. Use as string shorthands in color fields — pptxgenjs resolves them at render time.
 
 ### `theme.color` — semantic workspace aliases
 
@@ -174,7 +106,11 @@ theme.color.surfaceAlt   // e.g. 'bg2'
 ```
 Values are either hex strings (`'EEF7DF'`) or scheme-slot shorthands (`'accent1'`). Both work in pptxgenjs `color` fields.
 
-**Never hardcode hex values** — always use `theme.color.<name>`.
+**Color preference order:**
+1. **`theme.scheme` slots first** (`'accent1'`, `'tx1'`, `'bg1'`, etc.) — these are the PowerPoint theme palette and should be the default choice for most fills, text, and borders.
+2. **`theme.color.<name>` aliases** — semantic names defined in the workspace `theme.js`. Prefer these when you need a color that already has a semantic meaning in the workspace.
+3. **Add a new alias to `theme.color`** — if a slide genuinely needs a color not already named, add a new semantic entry in `theme.js` (e.g. `highlight: 'accent3'`) and reference it by name in the slide file.
+4. **Avoid inline hex values** — do not hardcode hex strings directly in slide files (e.g. `color: 'FF0000'`). The rare exception is a one-off decorative value with no semantic meaning, but this should be uncommon.
 
 ### `theme.size` — named font sizes
 
@@ -188,16 +124,11 @@ theme.size.cardTitle // 10.3 theme.size.cardBody  // 8.6
 theme.size.pullQuote // 13.5
 ```
 
-### `theme.font`
-
-```js
-theme.font.body   // 'Arial'        — main text
-theme.font.mono   // 'Courier New'  — code/mono text
-```
+`theme.font.body` (`'Arial'`) and `theme.font.mono` (`'Courier New'`) — reference instead of hardcoding font names.
 
 ### `theme.shape` — component visual defaults
 
-`theme.shape` holds per-component geometry and color defaults. Every component function reads its visual defaults from here, then `opts` overrides win at the per-call level.
+`theme.shape` holds per-component geometry and color defaults.
 
 **Resolution order for any visual property:**
 ```
@@ -238,68 +169,26 @@ Component namespaces and their properties:
 **Partial overrides** — export only the keys you want to change; all other properties keep their defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
 
 ```js
-// theme.js — workspace shape customisation example
+// theme.js — override only what you need; deep merge applies
 export const shape = {
-  card: {
-    borderColor: 'accent4',       // change card borders from grey to blue
-    shadow: { opacity: 0.05 },    // reduce shadow intensity (other shadow fields kept)
-  },
-  divider: {
-    lineWidth: 2.0,               // thicker divider lines
-  },
-  frame: {
-    wordmarkColor: 'accent1',     // use primary accent for the wordmark
-  },
+  card: { borderColor: 'accent4', shadow: { opacity: 0.05 } },
+  frame: { wordmarkColor: 'accent1' },
 };
 ```
 
 ## `run` — rich-text runs
 
-`run` is a top-level lib export (alongside `prim`, `comp`, etc.). Use it to create mixed-style text in a single text frame. Returns a pptxgenjs run object `{ text, options }`.
+Use `run` to build mixed-style text — pass an array of runs to `prim.text`.
 
 ```js
-const { run } = lib;   // or: const { theme, prim, comp, layout, frame, run } = lib;
+run('text', { fontSize: 14, color: theme.color.ink })     // plain
+run.bold('text') / run.italic('text') / run.color('text', color)  // shorthands
 
-// Plain run with explicit opts
-run('Hello world', { fontSize: 14, color: theme.color.ink })
-
-// Shorthand helpers
-run.bold('Bold text')
-run.italic('Italic text')
-run.color('Colored text', theme.color.primary)
-
-// Compose: pass an existing run to add/override opts
-run(run.bold('text'), { color: theme.color.primary })  // bold + colored
-
-// Pass an array of runs to prim.text for mixed styles
-prim.text(slide, { x: 0.73, y: 1.0, w: 5.0, h: 0.5 }, [
+prim.text(slide, box, [
   run('Heading\n', { bold: true, color: theme.color.ink }),
-  run('Subtitle text', { color: theme.color.bodyText }),
+  run('Body text', { color: theme.color.bodyText }),
 ], { fontSize: 14 }, 's01-title');
 ```
-
----
-
-## lib Destructuring
-
-`lib` exposes six top-level exports. Destructure at the top of each slide function:
-
-```js
-export default function Slide01_Overview(pptx, lib) {
-  const { theme, run, prim, comp, layout, frame } = lib;
-
-  // Further destructure groups as needed:
-  const { text, roundRect, fillRect } = prim;
-  const { infoCard, stepBox, flowBox } = comp;
-  const { sectionTitle, darkPanelHeader } = layout;
-  const { border, slideHeader, slideFooter } = frame;
-
-  const slide = pptx.addSlide();
-  // ...
-}
-```
-
-`theme` is the plain data object (not a function group). Access it as `theme.color.primary`, `theme.grid.marginX`, etc. `run` is the rich-text helper — see the [`run` section](#run--rich-text-runs) above.
 
 ---
 
@@ -379,13 +268,21 @@ Pre-built composite components — each renders multiple primitives with consist
 
 ---
 
-## Custom Components
+## Custom Components & Full Creative Flexibility
 
-If the built-in components don't meet your design needs, **it is entirely acceptable to build new components** directly in your slide files using `prim` primitives. A custom component is just a plain function that takes `(slide, box, content, opts)` and makes `prim` calls internally — there is no special registration or framework needed.
+**You are not limited to the built-in component library.** The available `comp`, `layout`, and `frame` functions are a library of useful defaults — not a ceiling on what you can produce.
 
-It is also acceptable to **drop down to pptxgenjs directly** (e.g. `slide.addText()`, `slide.addShape()`, `slide.addImage()`) when `lib` does not expose what you need. Use the [pptxgenjs docs](https://gitbrent.github.io/PptxGenJS/) as reference. Prefer `lib` where it covers the use case — fall back to raw pptxgenjs only when necessary.
+When the visual concept calls for something the library doesn't cover:
 
-If you create something reusable and well-tested, sharing it back with the forge is highly appreciated. Open a PR with the implementation or file an issue and paste the function code. This helps grow the shared component library for everyone.
+1. **Write a custom helper function** — a plain function `(slide, box, content, opts)` that makes `prim` calls; no registration needed.
+
+2. **Compose `prim` calls freely.** Any layout, grid, repeated element, or visual treatment that fits the concept — build it from primitives.
+
+3. **Drop to raw pptxgenjs** when neither `lib` nor `prim` covers the need (`slide.addText()`, `slide.addShape()`, `slide.addImage()`, `slide.addChart()`, etc.). Use the [pptxgenjs docs](https://gitbrent.github.io/PptxGenJS/) as reference.
+
+**Decision rule:** reach for a built-in component when it genuinely fits the concept. When it doesn't, build what fits. Never force a concept into an ill-fitting component just because it exists.
+
+If you create something reusable and well-tested, sharing it back with the forge is highly appreciated.
 
 ---
 
@@ -407,20 +304,15 @@ All `layout` functions accept `text` as a plain string or `{ text: string }` obj
 
 ## `frame` — Frame Chrome
 
-Repeated chrome that goes on **every slide**. Always pass `undefined` as `box` — these functions self-position using `theme.grid` and `theme.header`/`theme.footer`.
 
+Repeated chrome that goes on **applicable slide**. Always pass `undefined` as `box` — these functions self-position using `theme.grid` and `theme.header`/`theme.footer`.
 | Function | What it renders |
 |----------|----------------|
 | `border(slide, undefined, opts, name)` | Thin outer border around the slide |
 | `slideHeader(slide, undefined, opts, name)` | Top header bar — wordmark (`theme.header.wordmark`) + badge (`theme.header.badge`) |
 | `slideFooter(slide, undefined, opts, name)` | Bottom footer bar — left and right text from `theme.footer` |
 
-Call all three at the beginning or end of every slide function:
-```js
-border(slide, undefined, {}, 's01-border');
-slideHeader(slide, undefined, {}, 's01');
-slideFooter(slide, undefined, {}, 's01');
-```
+If required, call at the top of deck/slide function:
 
 ---
 
@@ -445,57 +337,31 @@ Names must be **unique within a slide**.
 
 ---
 
-## pptxgenjs Boundary
-
-Slide files interact with pptxgenjs directly only for slide creation:
-- `pptx.addSlide()` — call once per slide to get the slide object
-- `slide.background` — optionally set the slide background color
-
-Everything else goes through `lib` — there is no need to call `slide.addText()`, `slide.addShape()`, `slide.addImage()`, etc. directly. Using `lib` ensures consistent styling and correct positioning.
-
-```js
-// Prefer lib over raw pptxgenjs methods
-prim.text(slide, { x: 1, y: 1, w: 4, h: 0.5 }, 'Hello', {}, 's01-hello');
-// rather than: slide.addText('Hello', { x: 1, y: 1, w: 4, h: 0.5 });
-```
-
-`run()` produces pptxgenjs run objects — pass them as arrays to `prim.text()`. The run format does not need to be constructed manually.
-
----
-
 ## Worked Example
-
-A complete, minimal, compilable slide file:
 
 ```js
 // workspaces/my-deck/slides/01-example.js
 export default function Example(pptx, lib) {
-  // 1. Destructure lib
   const { theme, run, prim, comp, layout, frame } = lib;
   const { text, roundRect } = prim;
   const { infoCard } = comp;
   const { sectionTitle } = layout;
   const { border, slideHeader, slideFooter } = frame;
 
-  // 2. Create the slide
   const slide = pptx.addSlide();
   slide.background = { color: theme.color.surface };
 
-  // 3. Frame chrome — call on every slide
   border(slide, undefined, {}, 's01-border');
   slideHeader(slide, undefined, {}, 's01');
   slideFooter(slide, undefined, {}, 's01');
 
-  // 4. Section heading (self-positions at contentTop when box is null)
   sectionTitle(slide, null, 'Example Section', {}, 's01-section');
 
-  // 5. Mixed-style text using run
   text(slide, { x: theme.grid.marginX, y: 1.4, w: theme.grid.colLeftW, h: 0.5 }, [
     run('Bold intro.  ', { bold: true, color: theme.color.ink }),
-    run('Regular follow-on text that explains the point.', { color: theme.color.bodyText }),
+    run('Regular follow-on text.', { color: theme.color.bodyText }),
   ], { fontSize: theme.size.bodyLg }, 's01-intro');
 
-  // 6. A simple rounded-rect background behind the card column
   roundRect(slide,
     { x: theme.grid.marginX, y: 2.1, w: theme.grid.colLeftW, h: 2.2 },
     undefined,
@@ -503,7 +369,6 @@ export default function Example(pptx, lib) {
     's01-card-bg'
   );
 
-  // 7. A component card
   infoCard(slide,
     { x: theme.grid.marginX + 0.2, y: 2.3, w: theme.grid.colLeftW - 0.4, h: 1.0 },
     { title: 'Card Title', body: 'Supporting detail text goes here.' },
@@ -511,7 +376,6 @@ export default function Example(pptx, lib) {
     's01-card'
   );
 
-  // 8. Right column — a pull quote using layout
   layout.pullQuote(slide,
     { x: theme.grid.colRight, y: 1.4, w: theme.grid.colRightW, h: 1.2 },
     '"A well-structured slide communicates at a glance."',
@@ -520,5 +384,3 @@ export default function Example(pptx, lib) {
   );
 }
 ```
-
-**To test:** save the file in `workspaces/<slug>/slides/` and run `npm run forge <slug>`. The output `.pptx` will appear in `workspaces/<slug>/out/`.
