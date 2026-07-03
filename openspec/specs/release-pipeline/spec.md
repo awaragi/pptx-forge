@@ -46,11 +46,11 @@ A `scripts/publish.js` script SHALL tag the current version from `package.json` 
 - **THEN** `node scripts/publish.js` is executed
 
 ### Requirement: GitHub Actions release workflow
-A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags matching the pattern `[0-9]+.[0-9]+.[0-9]+`, install dependencies and build the browser tool, create a zip archive of the repository using `git archive`, and publish a GitHub release attaching both the source zip and the built `pptx-forge.html` (renamed to include the version) with auto-generated notes.
+A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags matching the pattern `[0-9]+.[0-9]+.[0-9]+`, install dependencies and build the browser tool, create a zip archive of the repository using `git archive`, and publish a GitHub release attaching the source zip, a version-named copy of the built `pptx-forge.html`, and the unversioned `pptx-forge.html` itself, with auto-generated notes.
 
 #### Scenario: Tag pushed to remote
 - **WHEN** a tag such as `1.0.1` is pushed to the GitHub remote
-- **THEN** the workflow installs dependencies, runs `npm run build:browser` to produce `pptx-forge.html`, creates `pptx-forge-1.0.1.zip` via `git archive --prefix=pptx-forge-1.0.1/`, publishes a GitHub release named `pptx-forge 1.0.1` with `--generate-notes`, and attaches both `pptx-forge-1.0.1.zip` and `pptx-forge-1.0.1.html` as release assets
+- **THEN** the workflow installs dependencies, runs `npm run build:browser` to produce `pptx-forge.html`, creates `pptx-forge-1.0.1.zip` via `git archive --prefix=pptx-forge-1.0.1/`, publishes a GitHub release named `pptx-forge 1.0.1` with `--generate-notes`, and attaches `pptx-forge-1.0.1.zip`, `pptx-forge-1.0.1.html`, and unversioned `pptx-forge.html` as release assets
 
 #### Scenario: Release archive excludes dev directories
 - **WHEN** the zip is extracted
@@ -59,6 +59,10 @@ A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags match
 #### Scenario: Attached html is directly usable
 - **WHEN** a user downloads `pptx-forge-1.0.1.html` from the release and opens it via `file://`
 - **THEN** the browser tool is fully functional with no build step, `npm install`, or network access required
+
+#### Scenario: Unversioned asset provides a stable "latest" download link
+- **WHEN** a user requests `https://github.com/<owner>/<repo>/releases/latest/download/pptx-forge.html`
+- **THEN** GitHub resolves it to the unversioned `pptx-forge.html` asset attached to whichever release is currently marked latest, without the URL needing to change between releases
 
 ### Requirement: gitattributes export-ignore markers
 A `.gitattributes` file SHALL mark `openspec/`, `.claude/`, `scripts/`, `.github/`, `.gitattributes`, and `.gitignore` with the `export-ignore` attribute so they are excluded by `git archive`.

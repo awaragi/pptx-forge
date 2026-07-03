@@ -81,6 +81,13 @@ Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.
 
 A no-install alternative to the CLI: `pptx-forge.html` is a single self-contained HTML file that runs the same compile pipeline entirely client-side. Double-click it to open — no Node, no server, no network access required.
 
+Download a pre-built copy from [GitHub Releases](https://github.com/awaragi/pptx-forge/releases) — no build step required:
+
+- **Latest version:** [pptx-forge.html](https://github.com/awaragi/pptx-forge/releases/latest/download/pptx-forge.html) — always resolves to the newest release
+- **A specific version:** `https://github.com/awaragi/pptx-forge/releases/download/<version>/pptx-forge-<version>.html` (e.g. [1.1.0](https://github.com/awaragi/pptx-forge/releases/download/1.1.0/pptx-forge-1.1.0.html))
+
+Or build it yourself from source:
+
 ```bash
 npm run build:browser
 ```

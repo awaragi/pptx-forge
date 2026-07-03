@@ -34,10 +34,10 @@ jobs:
           cp lib.d.ts lib.d.ts.txt
           zip "pptx-forge-${tag}.zip" lib.d.ts.txt
 
-      - name: Rename browser build with version
+      - name: Copy browser build with versioned name
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          mv pptx-forge.html "pptx-forge-${tag}.html"
+          cp pptx-forge.html "pptx-forge-${tag}.html"
 
       - name: Create GitHub release
         env:
@@ -48,4 +48,5 @@ jobs:
             --title="pptx-forge $tag" \
             --generate-notes \
             "pptx-forge-${tag}.zip" \
-            "pptx-forge-${tag}.html"
+            "pptx-forge-${tag}.html" \
+            pptx-forge.html
