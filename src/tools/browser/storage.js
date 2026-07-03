@@ -2,7 +2,7 @@
 // sessionStorage availability under file:// is inconsistent across browsers
 // (private browsing, hardened configs, quota limits).
 const WORKSPACES_KEY = 'pptx-forge.workspaces';
-const ACTIVE_KEY = 'pptx-forge.activeWorkspace';
+const ACTIVE_KEY = 'pptx-forge.workspace';
 
 let onFailure = null;
 let warned = false;
