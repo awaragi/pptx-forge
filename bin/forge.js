@@ -2,10 +2,10 @@
 // Orchestrator: loads a workspace's slides in order and compiles them into a PPTX.
 // Usage: npm run forge <workspace> [--open|-o] [--snapshot|-t] [--help|-h]
 
-import { readdir, mkdir, readFile, writeFile } from 'fs/promises';
+import { readdir, mkdir, readFile, writeFile, stat } from 'fs/promises';
 import { spawn } from 'child_process';
 import JSZip from 'jszip';
-import { resolve, join, basename } from 'path';
+import { resolve, join, basename, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import pptxgen from 'pptxgenjs';
 import { createLib } from '../src/lib.js';
@@ -24,7 +24,8 @@ Usage: npm run forge <workspace> [options]
        npm run generate <workspace> [options]
 
 Arguments:
-  <workspace>     Name of the workspace to compile (e.g. my-deck)
+  <workspace>     Name of the workspace to compile (e.g. my-deck), or a path
+                  to a single slide .js file to compile just that slide
 
 Options:
   -o, --open      Open the generated file after compiling
@@ -38,6 +39,7 @@ Examples:
   npm run forge my-deck --preview
   npm run forge my-deck --snapshot
   npm run forge my-deck --open --snapshot
+  npm run forge workspaces/my-deck/slides/overview.js
 `;
 
 if (helpFlag) {
@@ -52,9 +54,36 @@ if (!workspaceArg) {
 }
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const wsDir = (workspaceArg.includes('/') || workspaceArg.startsWith('.'))
+const resolvedArg = (workspaceArg.includes('/') || workspaceArg.startsWith('.'))
   ? resolve(process.cwd(), workspaceArg)
   : resolve(root, 'workspaces', workspaceArg);
+
+let resolvedStat;
+try {
+  resolvedStat = await stat(resolvedArg);
+} catch {
+  console.error(`Error: workspace or file not found: ${workspaceArg}`);
+  process.exit(1);
+}
+
+// Single-file mode: <workspace> points directly at one slide .js file
+let singleSlidePath = null;
+let wsDir;
+if (resolvedStat.isFile()) {
+  if (!resolvedArg.endsWith('.js')) {
+    console.error(`Error: single-file mode requires a .js file, got: ${workspaceArg}`);
+    process.exit(1);
+  }
+  singleSlidePath = resolvedArg;
+  const parentDir = dirname(resolvedArg);
+  wsDir = basename(parentDir) === 'slides' ? dirname(parentDir) : parentDir;
+} else if (resolvedStat.isDirectory()) {
+  wsDir = resolvedArg;
+} else {
+  console.error(`Error: ${workspaceArg} is neither a workspace directory nor a slide file.`);
+  process.exit(1);
+}
+
 const workspaceSlug = basename(wsDir);
 const slidesDir = join(wsDir, 'slides');
 const outDir = join(wsDir, 'out');
@@ -72,13 +101,16 @@ try {
 
 const lib = createLib(themeOverrides);
 
-// Discover and sort slide files
-const slideFiles = (await readdir(slidesDir))
-  .filter(f => f.endsWith('.js'))
-  .sort();
+// Discover and sort slide files (or use the single file given in single-file mode)
+const slideFiles = singleSlidePath
+  ? [singleSlidePath]
+  : (await readdir(slidesDir))
+    .filter(f => f.endsWith('.js'))
+    .sort()
+    .map(f => join(slidesDir, f));
 
 if (slideFiles.length === 0) {
-  console.error(`No slide files found in workspaces/${workspaceSlug}/slides/`);
+  console.error(`No slide files found in ${slidesDir}`);
   process.exit(1);
 }
 
@@ -88,11 +120,11 @@ pptx.defineLayout({ name: 'CUSTOM_WIDE', width: 13.333, height: 7.5 });
 pptx.layout = 'CUSTOM_WIDE';
 pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial', lang: 'en-US' };
 
-for (const file of slideFiles) {
-  const slideUrl = pathToFileURL(join(slidesDir, file)).href;
+for (const filePath of slideFiles) {
+  const slideUrl = pathToFileURL(filePath).href;
   const mod = await import(slideUrl);
   mod.default(pptx, lib);
-  console.log(`  + ${file}`);
+  console.log(`  + ${basename(filePath)}`);
 }
 
 const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');

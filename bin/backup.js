@@ -41,8 +41,8 @@ const output = createWriteStream(outPath);
 const archive = new ZipArchive({ zlib: { level: 9 } });
 archive.pipe(output);
 
-archive.glob('slide*.js', { cwd: wsDir });
-archive.glob('theme.js',  { cwd: wsDir });
+archive.glob('slides/*.js', { cwd: wsDir });
+archive.glob('theme.js',    { cwd: wsDir });
 
 await new Promise((res, rej) => {
   output.on('close', res);

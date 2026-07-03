@@ -40,11 +40,14 @@ Copies the starter template into `workspaces/my-deck/` and prints next steps.
 ```bash
 npm run forge my-deck
 npm run forge workspaces/my-deck   # relative path — useful for tab completion
+npm run forge workspaces/my-deck/slides/overview.js   # single slide file — only that slide is included
 ```
 
 Aliases: `npm run build my-deck`, `npm run generate my-deck`
 
 Output: `workspaces/my-deck/out/my-deck.pptx`
+
+Pass a path to a single slide `.js` file instead of a workspace to compile just that slide — the rest of `slides/` is skipped, but `theme.js` and the output path still resolve from the enclosing workspace.
 
 ### Options
 
