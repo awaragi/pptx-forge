@@ -4,3 +4,4 @@ node_modules/
 workspaces/
 memory/
 .DS_Store
+/pptx-forge.html

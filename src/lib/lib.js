@@ -1,5 +1,5 @@
 // Factory assembler — imports all modules and wires createLib().
-// Slide files should import createLib from this file or from src/index.js.
+// Slide files should import createLib from this file or from src/lib/index.js.
 
 import { defaultTheme, deepMerge } from './theme.js';
 import { makePrimitives } from './primitives.js';

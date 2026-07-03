@@ -77,6 +77,24 @@ npm run backup workspaces/my-deck   # relative path — useful for tab completio
 
 Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.zip`.
 
+## Browser tool
+
+A no-install alternative to the CLI: `pptx-forge.html` is a single self-contained HTML file that runs the same compile pipeline entirely client-side. Double-click it to open — no Node, no server, no network access required.
+
+```bash
+npm run build:browser
+```
+
+This bundles `pptxgenjs`, `jszip`, and the `src/` rendering library into `pptx-forge.html` at the repo root (gitignored — rebuild it locally when you need it).
+
+Open the generated `pptx-forge.html` in a browser and:
+
+1. Drag and drop, click "Load files…", or click "New slide" to add `theme.js` (optional — a placeholder is preloaded) and one or more slide `.js` files.
+2. Click a file in the sidebar to edit it. Dropping a file with a name that already exists replaces its content in place.
+3. Click the filename above the editor (or its pencil icon) to rename it in place — edit the name directly (the `.js` extension is fixed and shown separately, not editable), Enter to confirm or Escape to cancel. Use the toolbar's Discard/Download icons to remove or download the file, or click "⚡ Forge" to compile everything currently loaded into a downloadable `.pptx`. Rename and Discard aren't available for `theme.js`.
+
+Only `.js` files are accepted, and Forge requires at least one slide file besides `theme.js`. This tool has no special sandboxing around the code it runs — it's meant for the same trusted, local use case as the CLI, just without requiring Node.
+
 ## Authoring slides
 
 Each slide file exports a default function:
@@ -168,3 +186,17 @@ If the built-in `comp` components don't meet your design needs, it is entirely a
 It is also acceptable to use pptxgenjs directly (e.g. `slide.addText()`, `slide.addShape()`, `slide.addImage()`) when `lib` doesn't cover what you need. Prefer `lib` where it applies — fall back to raw pptxgenjs only when necessary. See the [pptxgenjs docs](https://gitbrent.github.io/PptxGenJS/) for reference.
 
 If you create something reusable and well-tested, sharing it back with the forge is highly appreciated — open a PR with the implementation or file an issue and paste the function code. Contributions help grow the shared component library for everyone.
+
+## Backlog
+
+Planned features and improvements:
+
+- **Reset theme.js** — Add a reset button to discard and restore `theme.js` to its default value
+- **Release versioning** — Generate and publish versioned releases of the browser tool with release notes and changelog tracking
+- **Browser session storage** — Persist loaded files and editor state across page reloads to prevent content loss
+- **Light/dark mode** — Auto-detect system theme preference and apply accordingly in the browser tool
+- **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
+- **New project button** — Quick-start new workspace creation directly in the browser tool
+- **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
+- **AI reference** — Bundle INSTRUCTIONS.md and lib.d.ts into the browser build; expose via an "AI" button to copy combined reference for sharing with AI chatboxes
+- **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output

@@ -8,7 +8,7 @@ import JSZip from 'jszip';
 import { resolve, join, basename, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import pptxgen from 'pptxgenjs';
-import { createLib } from '../src/lib.js';
+import { createLib } from '../src/lib/lib.js';
 import open from 'open';
 
 const args = process.argv.slice(2);
