@@ -1,30 +1,20 @@
 import { compileDeck, CompileError } from './compile.js';
+import {
+  readWorkspaces,
+  writeWorkspaces,
+  getActiveWorkspaceName,
+  setActiveWorkspaceName,
+  setStorageFailureHandler,
+} from './storage.js';
 
 const THEME_NAME = 'theme.js';
-
-const THEME_PLACEHOLDER = `export default {
-  // PowerPoint theme slot hex values — injected into ppt/theme/theme1.xml.
-  // Uncomment and edit to override the library's default colors.
-  // scheme: {
-  //   dk1: '111827', lt1: 'FFFFFF', dk2: '374151', lt2: 'F9FAFB',
-  //   accent1: '86BC25',  // primary brand color
-  //   accent2: 'EF4444',  // danger / highlight
-  //   accent3: 'F59E0B',  // warning
-  //   accent4: '5B9BD5',  // link / secondary
-  //   accent5: '70AD47',  // subtle text
-  //   accent6: 'A5A5A5',  // border grey
-  // },
-
-  // Semantic color names used in slide files.
-  // color: { primary: 'accent1', ink: 'tx1', surface: 'bg1', bodyText: 'tx2', surfaceAlt: 'bg2', border: 'accent6' },
-
-  // Header text shown in the top bar on every slide.
-  // header: { wordmark: 'MY DECK', badge: 'TAG' },
-
-  // Footer text shown in the bottom bar on every slide.
-  // footer: { left: 'My Deck  |  Subtitle', right: 'Tag  •  Tag  •  Tag' },
-};
-`;
+const DEFAULT_WORKSPACE_KEY = 'deck';
+// __AI_REFERENCE__ and __THEME_PLACEHOLDER__ are injected at build time by
+// scripts/build-browser.js (esbuild `define`). The theme placeholder is
+// sourced from src/sample/theme.js — the same scaffold bin/create.js copies
+// into new CLI workspaces — so both stay in sync from one file.
+const AI_REFERENCE = typeof __AI_REFERENCE__ === 'string' ? __AI_REFERENCE__ : '';
+const THEME_PLACEHOLDER = typeof __THEME_PLACEHOLDER__ === 'string' ? __THEME_PLACEHOLDER__ : 'export default {};\n';
 
 const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
   const { theme, prim, comp, tables, layout, frame } = lib;
@@ -36,10 +26,13 @@ const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
 
 // State: theme is a fixed singleton entry; slides is a name-keyed map of
 // { name, content } compiled/displayed in ascending filename order.
+// workspaceKey mirrors the output filename and is the sessionStorage key
+// this state is saved under (see storage.js).
 const state = {
   theme: { name: THEME_NAME, content: THEME_PLACEHOLDER },
   slides: new Map(),
   active: THEME_NAME,
+  workspaceKey: DEFAULT_WORKSPACE_KEY,
 };
 
 let newSlideCounter = 1;
@@ -56,13 +49,23 @@ const el = {
   forgeBtn: document.getElementById('forge-btn'),
   downloadBtn: document.getElementById('download-btn'),
   discardBtn: document.getElementById('discard-btn'),
+  resetBtn: document.getElementById('reset-btn'),
   renameBtn: document.getElementById('rename-btn'),
   addSlideBtn: document.getElementById('add-slide-btn'),
+  newProjectBtn: document.getElementById('new-project-btn'),
   loadFilesBtn: document.getElementById('load-files-btn'),
   fileInput: document.getElementById('file-input'),
   dropOverlay: document.getElementById('drop-overlay'),
   statusBar: document.getElementById('status-bar'),
+  aiBtn: document.getElementById('ai-btn'),
+  aiOverlay: document.getElementById('ai-overlay'),
+  aiOverlayClose: document.getElementById('ai-overlay-close'),
+  aiReferenceTextarea: document.getElementById('ai-reference-textarea'),
 };
+
+setStorageFailureHandler(() => {
+  setStatus("Session persistence unavailable — changes won't survive a reload.", true);
+});
 
 function isThemePlaceholder(content) {
   return content === THEME_PLACEHOLDER;
@@ -79,6 +82,93 @@ function getActiveEntry() {
 function setStatus(message, isError = false) {
   el.statusBar.textContent = message || '';
   el.statusBar.classList.toggle('error', Boolean(isError));
+}
+
+function currentWorkspaceSnapshot() {
+  const snapshot = { [THEME_NAME]: state.theme.content };
+  for (const [name, entry] of state.slides) snapshot[name] = entry.content;
+  return snapshot;
+}
+
+// Writes the in-memory state into sessionStorage under state.workspaceKey and
+// keeps the active-workspace pointer in sync. Called on every state mutation.
+function persistWorkspace() {
+  const workspaces = readWorkspaces();
+  workspaces[state.workspaceKey] = currentWorkspaceSnapshot();
+  writeWorkspaces(workspaces);
+  setActiveWorkspaceName(state.workspaceKey);
+}
+
+// Loads the last-active workspace from sessionStorage, if any, before the
+// first render — a silent reload-and-resume with no user-facing prompt.
+function restoreActiveWorkspace() {
+  const activeName = getActiveWorkspaceName();
+  if (!activeName) return;
+  const workspaces = readWorkspaces();
+  const snapshot = workspaces[activeName];
+  if (!snapshot) return;
+
+  state.workspaceKey = activeName;
+  el.outputFilename.value = activeName;
+  state.slides.clear();
+  for (const [name, content] of Object.entries(snapshot)) {
+    if (name === THEME_NAME) {
+      state.theme.content = content;
+    } else {
+      state.slides.set(name, { name, content });
+    }
+  }
+}
+
+// Renaming the output filename switches to (and persists under) a new
+// workspace key, leaving whatever was last saved under the old key in place.
+function handleOutputNameChange() {
+  const newKey = sanitizeOutputName(el.outputFilename.value);
+  if (newKey === state.workspaceKey) return;
+  state.workspaceKey = newKey;
+  persistWorkspace();
+}
+
+function newProject() {
+  if (!window.confirm('Start a new project? The editor will reset to a blank workspace.')) return;
+  state.theme.content = THEME_PLACEHOLDER;
+  state.slides.clear();
+  state.active = THEME_NAME;
+  state.workspaceKey = DEFAULT_WORKSPACE_KEY;
+  el.outputFilename.value = DEFAULT_WORKSPACE_KEY;
+  persistWorkspace();
+  render();
+  setStatus('Started a new project.');
+}
+
+function showAiReferenceFallback() {
+  el.aiReferenceTextarea.value = AI_REFERENCE;
+  el.aiOverlay.classList.add('visible');
+  el.aiReferenceTextarea.focus();
+  el.aiReferenceTextarea.select();
+}
+
+async function copyAiReference() {
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      throw new Error('Clipboard API unavailable');
+    }
+    await navigator.clipboard.writeText(AI_REFERENCE);
+    setStatus('Copied AI reference (INSTRUCTIONS.md + lib.d.ts) to clipboard.');
+  } catch {
+    showAiReferenceFallback();
+    setStatus('Clipboard unavailable — select and copy the reference text below.', true);
+  }
+}
+
+function resetTheme() {
+  if (state.active !== THEME_NAME) return;
+  if (!window.confirm('Reset theme.js to its default placeholder? This cannot be undone.')) return;
+  state.theme.content = THEME_PLACEHOLDER;
+  el.editor.value = state.theme.content;
+  persistWorkspace();
+  render();
+  setStatus('Reset theme.js to the default placeholder.');
 }
 
 function render() {
@@ -109,6 +199,7 @@ function render() {
 
   const isTheme = state.active === THEME_NAME;
   el.discardBtn.style.display = isTheme ? 'none' : '';
+  el.resetBtn.style.display = isTheme ? '' : 'none';
   el.filenameGroup.classList.toggle('renamable', !isTheme);
   if (!renaming) {
     el.activeFilename.style.display = '';
@@ -146,6 +237,7 @@ function addOrReplaceFile(name, content) {
     el.editor.value = content;
   }
   render();
+  persistWorkspace();
   return true;
 }
 
@@ -188,6 +280,7 @@ function discardActiveFile() {
   state.slides.delete(name);
   state.active = THEME_NAME;
   render();
+  persistWorkspace();
   setStatus(`Discarded ${name}`);
 }
 
@@ -258,6 +351,7 @@ function commitRename(keepEditingOnFailure) {
   state.slides.set(newName, entry);
   state.active = newName;
   exitRenameMode();
+  persistWorkspace();
   setStatus(`Renamed ${oldName} → ${newName}`);
 }
 
@@ -302,6 +396,7 @@ function addBlankSlide() {
   } while (state.slides.has(name));
   state.slides.set(name, { name, content: NEW_SLIDE_TEMPLATE });
   selectFile(name);
+  persistWorkspace();
 }
 
 el.editor.addEventListener('input', () => {
@@ -312,9 +407,13 @@ el.editor.addEventListener('input', () => {
     // Re-render just enough to update the placeholder/muted styling.
     render();
   }
+  persistWorkspace();
 });
 
 el.addSlideBtn.addEventListener('click', addBlankSlide);
+el.newProjectBtn.addEventListener('click', newProject);
+el.resetBtn.addEventListener('click', resetTheme);
+el.outputFilename.addEventListener('change', handleOutputNameChange);
 el.loadFilesBtn.addEventListener('click', () => el.fileInput.click());
 el.fileInput.addEventListener('change', async (e) => {
   await handleFiles(e.target.files);
@@ -337,6 +436,11 @@ el.renameInput.addEventListener('input', () => {
   if (el.statusBar.classList.contains('error')) setStatus('');
 });
 el.forgeBtn.addEventListener('click', forge);
+el.aiBtn.addEventListener('click', copyAiReference);
+el.aiOverlayClose.addEventListener('click', () => el.aiOverlay.classList.remove('visible'));
+el.aiOverlay.addEventListener('click', (e) => {
+  if (e.target === el.aiOverlay) el.aiOverlay.classList.remove('visible');
+});
 
 let dragDepth = 0;
 window.addEventListener('dragenter', (e) => {
@@ -358,4 +462,5 @@ window.addEventListener('drop', async (e) => {
   }
 });
 
+restoreActiveWorkspace();
 render();

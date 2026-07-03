@@ -13,6 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build browser tool
+        run: npm run build:browser
+
       - name: Create release archive
         run: |
           tag="${GITHUB_REF#refs/tags/}"
@@ -24,6 +34,11 @@ jobs:
           cp lib.d.ts lib.d.ts.txt
           zip "pptx-forge-${tag}.zip" lib.d.ts.txt
 
+      - name: Rename browser build with version
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          mv pptx-forge.html "pptx-forge-${tag}.html"
+
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -32,4 +47,5 @@ jobs:
           gh release create "$tag" \
             --title="pptx-forge $tag" \
             --generate-notes \
-            "pptx-forge-${tag}.zip"
+            "pptx-forge-${tag}.zip" \
+            "pptx-forge-${tag}.html"

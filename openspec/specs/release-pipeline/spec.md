@@ -3,9 +3,7 @@
 ## Purpose
 
 Defines the local scripts and CI workflow for versioning and distributing pptx-forge as a downloadable archive via GitHub Releases.
-
 ## Requirements
-
 ### Requirement: Version bump script
 A `scripts/version.js` script SHALL bump the version field in `package.json` by a given increment type (`major`, `minor`, or `patch`) and optionally commit the change.
 
@@ -48,15 +46,19 @@ A `scripts/publish.js` script SHALL tag the current version from `package.json` 
 - **THEN** `node scripts/publish.js` is executed
 
 ### Requirement: GitHub Actions release workflow
-A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags matching the pattern `[0-9]+.[0-9]+.[0-9]+`, create a zip archive of the repository using `git archive`, and publish a GitHub release with the archive and auto-generated notes.
+A `.github/workflows/release.yml` workflow SHALL trigger on pushes to tags matching the pattern `[0-9]+.[0-9]+.[0-9]+`, install dependencies and build the browser tool, create a zip archive of the repository using `git archive`, and publish a GitHub release attaching both the source zip and the built `pptx-forge.html` (renamed to include the version) with auto-generated notes.
 
 #### Scenario: Tag pushed to remote
 - **WHEN** a tag such as `1.0.1` is pushed to the GitHub remote
-- **THEN** the workflow creates `pptx-forge-1.0.1.zip` via `git archive --prefix=pptx-forge-1.0.1/`, publishes a GitHub release named `pptx-forge 1.0.1` with `--generate-notes`, and attaches the zip as a release asset
+- **THEN** the workflow installs dependencies, runs `npm run build:browser` to produce `pptx-forge.html`, creates `pptx-forge-1.0.1.zip` via `git archive --prefix=pptx-forge-1.0.1/`, publishes a GitHub release named `pptx-forge 1.0.1` with `--generate-notes`, and attaches both `pptx-forge-1.0.1.zip` and `pptx-forge-1.0.1.html` as release assets
 
 #### Scenario: Release archive excludes dev directories
 - **WHEN** the zip is extracted
 - **THEN** it does NOT contain `openspec/`, `.claude/`, `scripts/`, `.github/`, `.gitattributes`, or `.gitignore`, but DOES contain `src/`, `bin/`, `package.json`, `package-lock.json`, `lib.d.ts`, `README.md`, `INSTRUCTIONS.md`, and `LICENSE`
+
+#### Scenario: Attached html is directly usable
+- **WHEN** a user downloads `pptx-forge-1.0.1.html` from the release and opens it via `file://`
+- **THEN** the browser tool is fully functional with no build step, `npm install`, or network access required
 
 ### Requirement: gitattributes export-ignore markers
 A `.gitattributes` file SHALL mark `openspec/`, `.claude/`, `scripts/`, `.github/`, `.gitattributes`, and `.gitignore` with the `export-ignore` attribute so they are excluded by `git archive`.
@@ -64,3 +66,4 @@ A `.gitattributes` file SHALL mark `openspec/`, `.claude/`, `scripts/`, `.github
 #### Scenario: git archive respects export-ignore
 - **WHEN** `git archive HEAD` is run against the repository
 - **THEN** the resulting archive contains no files under `openspec/`, `.claude/`, `scripts/`, or `.github/`, and contains no `.gitattributes` or `.gitignore` files
+

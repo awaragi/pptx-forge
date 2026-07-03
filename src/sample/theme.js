@@ -1,6 +1,9 @@
+// Workspace theme overrides — copied into every new workspace by `bin/create.js`,
+// and used as the browser tool's default theme.js placeholder (see build-browser.js).
+// Uncomment and edit any section below to override the library defaults.
+// See INSTRUCTIONS.md ("Theme Object") and lib.d.ts for the full reference.
 export default {
   // PowerPoint theme slot hex values — injected into ppt/theme/theme1.xml by compile.js.
-  // Remove or leave empty to use the library defaults.
   // scheme: {
   //   dk1: '111827', lt1: 'FFFFFF', dk2: '374151', lt2: 'F9FAFB',
   //   accent1: '86BC25',  // primary brand color
@@ -11,26 +14,47 @@ export default {
   //   accent6: 'A5A5A5',  // border grey
   // },
 
-  // Semantic color names used in slide files.
-  // Values can be hex strings ('EEF7DF') or scheme-slot shorthands ('accent1', 'tx1', 'bg1', etc.).
-  color: {
-    primary:    'accent1',
-    ink:        'tx1',
-    surface:    'bg1',
-    bodyText:   'tx2',
-    surfaceAlt: 'bg2',
-    border:     'accent6',
-  },
+  // Semantic color names used in slide files. Values can be hex strings ('EEF7DF')
+  // or scheme-slot shorthands: the six accents above, or the role aliases
+  // 'tx1'/'bg1'/'tx2'/'bg2' (PowerPoint's built-in redirects to dk1/lt1/dk2/lt2 —
+  // see INSTRUCTIONS.md's "theme.scheme" section for how those resolve).
+  // color: {
+  //   primary:    'accent1',
+  //   danger:     'accent2',
+  //   warning:    'accent3',
+  //   link:       'accent4',
+  //   ink:        'tx1',
+  //   surface:    'bg1',
+  //   bodyText:   'tx2',
+  //   surfaceAlt: 'bg2',
+  // },
+
+  // Font faces — reference via theme.font.body / theme.font.mono instead of hardcoding names.
+  // font: {
+  //   body: 'Arial',
+  //   mono: 'Courier New',
+  // },
 
   // Header text shown in the top bar on every slide.
-  header: {
-    wordmark: 'MY DECK',
-    badge:    'TAG',
-  },
+  // header: {
+  //   wordmark: 'MY DECK',
+  //   badge:    'TAG',
+  // },
 
   // Footer text shown in the bottom bar on every slide.
-  footer: {
-    left:  'My Deck  |  Subtitle',
-    right: 'Tag  •  Tag  •  Tag',
-  },
+  // footer: {
+  //   left:  'My Deck  |  Subtitle',
+  //   right: 'Tag  •  Tag  •  Tag',
+  // },
+
+  // Per-component visual defaults (colors, borders, shadows). One example shown below —
+  // see INSTRUCTIONS.md's "theme.shape" table or lib.d.ts for the full set of
+  // namespaces (card, fileCard, flowBox, divider, progressBar, dataTable, ...).
+  // shape: {
+  //   card: {
+  //     bgColor:     'bg1',
+  //     borderColor: 'accent6',
+  //     accentColor: 'accent1',
+  //   },
+  // },
 };

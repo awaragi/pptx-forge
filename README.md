@@ -191,12 +191,6 @@ If you create something reusable and well-tested, sharing it back with the forge
 
 Planned features and improvements:
 
-- **Reset theme.js** — Add a reset button to discard and restore `theme.js` to its default value
-- **Release versioning** — Generate and publish versioned releases of the browser tool with release notes and changelog tracking
-- **Browser session storage** — Persist loaded files and editor state across page reloads to prevent content loss
-- **Light/dark mode** — Auto-detect system theme preference and apply accordingly in the browser tool
 - **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
-- **New project button** — Quick-start new workspace creation directly in the browser tool
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
-- **AI reference** — Bundle INSTRUCTIONS.md and lib.d.ts into the browser build; expose via an "AI" button to copy combined reference for sharing with AI chatboxes
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output

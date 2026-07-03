@@ -1,9 +1,7 @@
 ## Purpose
 
 Defines `pptx-forge.html`, a single self-contained, dependency-free HTML page that lets a user load `theme.js` and slide `.js` files (via drag-and-drop, click-to-select, or in-page editing), edit them in a VSCode-style sidebar-plus-editor layout, and compile them client-side into a downloadable `.pptx` — reusing the existing `src/` rendering library's forge pipeline entirely in the browser, with no install, server, or network access required.
-
 ## Requirements
-
 ### Requirement: Single self-contained HTML distribution
 The system SHALL provide a single static `pptx-forge.html` file, produced by a build step, that contains all JavaScript needed to run the tool (including `pptxgenjs`, `jszip`, and the `src/` rendering library) inlined into the page with no external `<script src>` references and no relative-path ES module imports.
 
@@ -75,7 +73,7 @@ The system SHALL let the user select any sidebar entry to load its content into 
 - **THEN** that entry's stored content is updated to match, and is used as-is the next time Forge runs, whether or not the file has been saved
 
 ### Requirement: Editor toolbar provides download, discard, and rename actions
-The system SHALL present the currently active file's actions as icon buttons in the editor toolbar: Download, Discard, and Rename. The Rename affordance (a pencil icon) SHALL be displayed immediately next to the active filename, and clicking the filename text itself SHALL also trigger rename. Discard and Rename SHALL NOT be available when the active file is `theme.js`.
+The system SHALL present the currently active file's actions as icon buttons in the editor toolbar: Download, and either Discard or Reset depending on the active file, plus Rename. The Rename affordance (a pencil icon) SHALL be displayed immediately next to the active filename, and clicking the filename text itself SHALL also trigger rename. When the active file is `theme.js`, Discard and Rename SHALL NOT be available, and a Reset action SHALL be shown in Discard's toolbar position instead.
 
 #### Scenario: Icon buttons shown for a slide file
 - **WHEN** the active file is a slide file (not `theme.js`)
@@ -85,9 +83,9 @@ The system SHALL present the currently active file's actions as icon buttons in 
 - **WHEN** the active file is a slide file and the user clicks either the filename text or the pencil icon next to it
 - **THEN** rename mode is entered (see "Rename changes a slide file's name")
 
-#### Scenario: Discard and Rename unavailable for theme.js
+#### Scenario: Discard and Rename unavailable for theme.js, Reset shown instead
 - **WHEN** the active file is `theme.js`
-- **THEN** only the Download icon button is available; the Discard icon and the rename pencil are not shown, and clicking the filename text does not enter rename mode
+- **THEN** the Discard icon and the rename pencil are not shown, clicking the filename text does not enter rename mode, and a Reset icon button is shown in the toolbar position Discard would otherwise occupy
 
 ### Requirement: Download saves the active file
 The system SHALL provide a Download action that downloads the currently active file's current content as a file named after that entry, using the browser's normal file-download mechanism.
@@ -164,3 +162,15 @@ The system SHALL provide a Forge action that compiles the `theme.js` entry's def
 #### Scenario: Forge requires at least one slide file
 - **WHEN** the user clicks Forge with no slide files loaded (only the `theme.js` entry present)
 - **THEN** no download is produced and an inline message explains that at least one slide file is required
+
+### Requirement: Reset restores theme.js to the default placeholder
+The system SHALL provide a Reset action, available only when the active file is `theme.js`, that after confirmation replaces the `theme.js` entry's content with the default placeholder content and returns its sidebar styling to the muted placeholder state.
+
+#### Scenario: Reset restores the placeholder after confirmation
+- **WHEN** the user has edited `theme.js` away from its default content, clicks Reset, and confirms the prompt
+- **THEN** the `theme.js` entry's content is replaced with the default placeholder, the editor pane updates to show it, and the sidebar entry returns to its muted placeholder styling
+
+#### Scenario: Reset is cancellable
+- **WHEN** the user clicks Reset and declines the confirmation prompt
+- **THEN** the `theme.js` content is unchanged
+

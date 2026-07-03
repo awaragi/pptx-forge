@@ -94,11 +94,16 @@ theme.footer   // { left, right }    — used by frame.slideFooter
 
 Ten slots: `dk1`, `lt1`, `dk2`, `lt2`, `accent1`–`accent6`. Use as string shorthands in color fields — pptxgenjs resolves them at render time.
 
+PowerPoint also exposes four **role aliases** — `tx1`, `bg1`, `tx2`, `bg2` — that are not separate colors but fixed redirects onto the ten slots above: `tx1`→`dk1`, `bg1`→`lt1`, `tx2`→`dk2`, `bg2`→`lt2`. You never set `tx1`/`bg1`/`tx2`/`bg2` directly (they aren't keys in `theme.scheme`); you set `dk1`/`lt1`/`dk2`/`lt2` and use the role aliases anywhere a color is expected, including as values in `theme.color` (see below), when you want to say "the text color" or "the background color" rather than naming the underlying slot.
+
 ### `theme.color` — semantic workspace aliases
 
 Workspaces define their own color names in `theme.js`. Always reference colors by semantic name:
 ```js
 theme.color.primary      // e.g. 'accent1'
+theme.color.danger       // e.g. 'accent2'
+theme.color.warning      // e.g. 'accent3'
+theme.color.link         // e.g. 'accent4'
 theme.color.ink          // e.g. 'tx1'
 theme.color.surface      // e.g. 'bg1'
 theme.color.bodyText     // e.g. 'tx2'
@@ -163,8 +168,10 @@ Component namespaces and their properties:
 | `imageCard` | `imageColor`, `bgColor`, `borderColor`, `titleColor`, `bodyColor`, `shadow` |
 | `progressBar` | `fillColor`, `trackColor`, `labelColor`, `pctColor` |
 | `tagBadge` | `bgColor`, `textColor` |
+| `dataTable` | `headerBgColor`, `headerTextColor`, `rowBgColor`, `altBgColor`, `borderColor`, `textColor` |
 | `darkStat` | `bgColor`, `valueColor`, `labelColor`, `sourceColor` |
 | `teamCard` | `avatarBgColor`, `avatarTextColor` |
+| `comparisonTable` | `headerBgColor`, `headerTextColor`, `criteriaColor`, `valueColor`, `borderColor` |
 
 **Partial overrides** — `theme.js` must export a **single default object**. Include only the keys you want to change; all other properties keep their library defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
 

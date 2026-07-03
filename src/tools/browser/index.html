@@ -18,6 +18,21 @@
     --danger: #f14c4c;
     --danger-bg: #3a2020;
   }
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --bg-0: #ffffff;
+      --bg-1: #f3f3f3;
+      --bg-2: #e8e8e8;
+      --border: #d4d4d4;
+      --text: #1e1e1e;
+      --text-dim: #6e6e6e;
+      --accent: #005fb8;
+      --accent-fg: #ffffff;
+      --danger: #a1260d;
+      --danger-bg: #fbe9e7;
+    }
+  }
   * { box-sizing: border-box; }
   html, body {
     height: 100%;
@@ -214,6 +229,46 @@
     pointer-events: none;
   }
   .drop-overlay.visible { display: flex; }
+  .ai-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .ai-overlay.visible { display: flex; }
+  .ai-panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: min(700px, 90vw);
+    height: min(500px, 80vh);
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+  }
+  .ai-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  #ai-reference-textarea {
+    flex: 1 1 auto;
+    resize: none;
+    background: var(--bg-0);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+  }
   #status-bar {
     flex: 0 0 auto;
     min-height: 28px;
@@ -232,6 +287,7 @@
     <header class="topbar">
       <div class="brand">pptx-forge</div>
       <div class="spacer"></div>
+      <button id="ai-btn" title="Copy AI reference (INSTRUCTIONS.md + lib.d.ts)">🤖 AI</button>
       <label class="output-name">
         output:
         <input id="output-filename" value="deck" spellcheck="false">
@@ -246,6 +302,7 @@
         <div class="sidebar-footer">
           <button id="add-slide-btn">New slide</button>
           <button id="load-files-btn">Load files…</button>
+          <button id="new-project-btn">New project</button>
           <input id="file-input" type="file" accept=".js" multiple hidden>
         </div>
       </aside>
@@ -259,6 +316,7 @@
           </span>
           <span class="spacer"></span>
           <button id="discard-btn" class="icon-btn" title="Discard" aria-label="Discard">🗑</button>
+          <button id="reset-btn" class="icon-btn" title="Reset to default" aria-label="Reset to default">↺</button>
           <button id="download-btn" class="icon-btn" title="Download" aria-label="Download">⬇</button>
         </div>
         <textarea id="editor" spellcheck="false"></textarea>
@@ -267,6 +325,15 @@
     <div id="status-bar"></div>
   </div>
   <div class="drop-overlay" id="drop-overlay">Drop .js files to load them</div>
+  <div class="ai-overlay" id="ai-overlay">
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <span>AI reference — copy manually</span>
+        <button id="ai-overlay-close" class="icon-btn" title="Close" aria-label="Close">✕</button>
+      </div>
+      <textarea id="ai-reference-textarea" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
   <script>/*__APP_BUNDLE__*/</script>
 </body>
 </html>
