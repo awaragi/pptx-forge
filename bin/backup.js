@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Backs up all slide and theme files for a workspace into a timestamped zip.
+// Backs up all files in a workspace into a timestamped zip, excluding generated folders.
 // Usage: npm run backup <workspace> [--help|-h]
 
 import { createWriteStream, mkdirSync } from 'fs';
@@ -41,8 +41,11 @@ const output = createWriteStream(outPath);
 const archive = new ZipArchive({ zlib: { level: 9 } });
 archive.pipe(output);
 
-archive.glob('slides/*.js', { cwd: wsDir });
-archive.glob('theme.js',    { cwd: wsDir });
+archive.glob('**/*', {
+  cwd: wsDir,
+  nodir: true,
+  skip: ['**/out', '**/backups'],
+});
 
 await new Promise((res, rej) => {
   output.on('close', res);

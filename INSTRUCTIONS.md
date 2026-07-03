@@ -166,13 +166,15 @@ Component namespaces and their properties:
 | `darkStat` | `bgColor`, `valueColor`, `labelColor`, `sourceColor` |
 | `teamCard` | `avatarBgColor`, `avatarTextColor` |
 
-**Partial overrides** — export only the keys you want to change; all other properties keep their defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
+**Partial overrides** — `theme.js` must export a **single default object**. Include only the keys you want to change; all other properties keep their library defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
 
 ```js
-// theme.js — override only what you need; deep merge applies
-export const shape = {
-  card: { borderColor: 'accent4', shadow: { opacity: 0.05 } },
-  frame: { wordmarkColor: 'accent1' },
+// theme.js — export default; include only what you need to override
+export default {
+  shape: {
+    card: { borderColor: 'accent4', shadow: { opacity: 0.05 } },
+    frame: { wordmarkColor: 'accent1' },
+  },
 };
 ```
 
