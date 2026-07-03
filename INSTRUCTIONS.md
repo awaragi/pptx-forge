@@ -6,9 +6,9 @@
 
 ## Overview
 
-JavaScript slide files compile into PowerPoint decks via [pptxgenjs](https://gitbrent.github.io/PptxGenJS/). `lib.js` wraps pptxgenjs in a design-system API.
+JavaScript slide files compile into PowerPoint decks via [pptxgenjs](https://gitbrent.github.io/PptxGenJS/). Project library wraps pptxgenjs in a design-system API.
 
-**You only need two files:** `INSTRUCTIONS.md` (this file) and `lib.d.ts(.txt)` (authoritative typed signatures).
+**You only need two files:** `INSTRUCTIONS.md` (this file) and `lib.d.ts(.txt)` (authoritative typed signatures). If lib.d.ts is missing, prompt the user for it.
 
 **Creative freedom:** Built-in `lib` components are a starting point, not a constraint. If a concept calls for a layout or visual treatment the library doesn't cover, implement it — write custom helpers in the slide file, compose `prim` calls freely, or drop to raw pptxgenjs. The goal is the best slide for the concept, not maximum use of the component library.
 
