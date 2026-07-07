@@ -20,11 +20,11 @@
 
 ## 4. Manual GitHub configuration (perform one at a time, confirm each before continuing)
 
-- [ ] 4.1 **MANUAL**: Merge/push the branch containing `src/pages/index.html`, `pages.yml`, and the README change to `master`
-- [ ] 4.2 **MANUAL**: In the GitHub repo, go to Settings → Pages → "Build and deployment" → set Source to **"GitHub Actions"**
-- [ ] 4.3 **MANUAL**: Optional — Settings → General → set the repo's **Website** field to `https://awaragi.github.io/pptx-forge/`
-- [ ] 4.4 **MANUAL**: Push a version tag to trigger the first deploy (e.g. `npm run release`)
-- [ ] 4.5 **MANUAL**: In the Actions tab, confirm the `pages.yml` run succeeded, then verify `https://awaragi.github.io/pptx-forge/` shows the landing page and `https://awaragi.github.io/pptx-forge/pptx-forge.html` opens the working browser tool
+- [x] 4.1 **MANUAL**: Merge/push the branch containing `src/pages/index.html`, `pages.yml`, and the README change to `master`
+- [x] 4.2 **MANUAL**: In the GitHub repo, go to Settings → Pages → "Build and deployment" → set Source to **"GitHub Actions"**
+- [ ] 4.3 **MANUAL**: Optional — Settings → General → set the repo's **Website** field to `https://awaragi.github.io/pptx-forge/` — skipped by user, left unset
+- [x] 4.4 **MANUAL**: Push a version tag to trigger the first deploy (e.g. `npm run release`) — first attempt (tag `1.2.1`) was rejected by the `github-pages` environment's branch protection rule (only allowed `master`, not tags); user added a deployment tag rule in Settings → Environments → github-pages, then the deploy succeeded
+- [x] 4.5 **MANUAL**: In the Actions tab, confirm the `pages.yml` run succeeded, then verify `https://awaragi.github.io/pptx-forge/` shows the landing page and `https://awaragi.github.io/pptx-forge/pptx-forge.html` opens the working browser tool — confirmed live at https://awaragi.github.io/pptx-forge/
 
 ## 5. Verification
 

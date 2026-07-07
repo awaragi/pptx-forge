@@ -205,6 +205,8 @@ Planned features and improvements:
 - **AI default prompt** — Add a system prompt that instructs the chatbot to either apply the current discussion to generate a pptx-forge output or ask the user what presentation they want to generate
 - **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
+- **Version display in browser tool** — Show the version number in `pptx-forge.html` UI so users can easily identify which version they're running
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
 - **Local storage workspaces** — Support multiple workspaces persisted in browser local storage instead of session, allowing users to resume work across browser sessions
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
+
