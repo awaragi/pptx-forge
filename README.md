@@ -2,6 +2,8 @@
 
 Compile JavaScript slide files into PowerPoint decks. Author slides as plain `.js` files using a design-system API — no PowerPoint, no drag-and-drop.
 
+**[Try it live](https://awaragi.github.io/pptx-forge/)** — no install required.
+
 ## How it works
 
 Each workspace is a folder under `workspaces/`. You write slide files in `workspaces/<slug>/slides/`, optionally define a color scheme in `theme.js`, and run forge to get a `.pptx`.
@@ -81,7 +83,9 @@ Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.
 
 A no-install alternative to the CLI: `pptx-forge.html` is a single self-contained HTML file that runs the same compile pipeline entirely client-side. Double-click it to open — no Node, no server, no network access required.
 
-Download a pre-built copy from [GitHub Releases](https://github.com/awaragi/pptx-forge/releases) — no build step required:
+- **Use it online:** [pptx-forge.html](https://awaragi.github.io/pptx-forge/pptx-forge.html) — hosted version of the latest release, opens directly in your browser, nothing to download
+
+Or download a pre-built copy from [GitHub Releases](https://github.com/awaragi/pptx-forge/releases) — no build step required:
 
 - **Latest version:** [pptx-forge.html](https://github.com/awaragi/pptx-forge/releases/latest/download/pptx-forge.html) — always resolves to the newest release
 - **A specific version:** `https://github.com/awaragi/pptx-forge/releases/download/<version>/pptx-forge-<version>.html` (e.g. [1.1.0](https://github.com/awaragi/pptx-forge/releases/download/1.1.0/pptx-forge-1.1.0.html))
@@ -198,6 +202,9 @@ If you create something reusable and well-tested, sharing it back with the forge
 
 Planned features and improvements:
 
+- **AI default prompt** — Add a system prompt that instructs the chatbot to either apply the current discussion to generate a pptx-forge output or ask the user what presentation they want to generate
 - **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
+- **Local storage workspaces** — Support multiple workspaces persisted in browser local storage instead of session, allowing users to resume work across browser sessions
+- **Version history** — Store version numbers with workspaces to display changelog since last compilation
