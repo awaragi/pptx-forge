@@ -1,8 +1,5 @@
-# browser-ai-reference Specification
+## MODIFIED Requirements
 
-## Purpose
-TBD - created by archiving change browser-tool-enhancements. Update Purpose after archive.
-## Requirements
 ### Requirement: Build-time bundling of AI reference content
 The build step (`scripts/build-browser.js`) SHALL read the repository's `AI-CHAT.md`, `INSTRUCTIONS.md`, and `lib.d.ts` files and inline their combined text content, in that order, into the produced `pptx-forge.html`, so the running page has no dependency on fetching any of the three files at runtime.
 
@@ -24,4 +21,3 @@ The system SHALL provide an AI button that attempts to copy the bundled `AI-CHAT
 #### Scenario: Clipboard API unavailable or fails
 - **WHEN** the user clicks the AI button and the Clipboard API is unavailable or the write attempt throws
 - **THEN** a textarea containing the combined reference text (including the chatbot instruction) is shown with its content pre-selected, so the user can copy it manually
-

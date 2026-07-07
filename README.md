@@ -202,7 +202,6 @@ If you create something reusable and well-tested, sharing it back with the forge
 
 Planned features and improvements:
 
-- **AI default prompt** — Add a system prompt that instructs the chatbot to either apply the current discussion to generate a pptx-forge output or ask the user what presentation they want to generate
 - **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
 - **Version display in browser tool** — Show the version number in `pptx-forge.html` UI so users can easily identify which version they're running

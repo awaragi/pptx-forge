@@ -13,9 +13,10 @@ const shellPath = resolve(root, 'src/tools/browser/index.html');
 const outPath = resolve(root, 'pptx-forge.html');
 const marker = '/*__APP_BUNDLE__*/';
 
+const aiChat = await readFile(resolve(root, 'AI-CHAT.md'), 'utf8');
 const instructions = await readFile(resolve(root, 'INSTRUCTIONS.md'), 'utf8');
 const libDts = await readFile(resolve(root, 'lib.d.ts'), 'utf8');
-const aiReference = `# INSTRUCTIONS.md\n\n${instructions}\n\n# lib.d.ts\n\n${libDts}`;
+const aiReference = `# AI-CHAT.md\n\n${aiChat}\n\n# INSTRUCTIONS.md\n\n${instructions}\n\n# lib.d.ts\n\n${libDts}`;
 
 // theme.js placeholder: sourced from the CLI's own workspace scaffold so the
 // browser tool and `bin/create.js` never drift out of sync.
