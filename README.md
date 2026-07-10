@@ -208,4 +208,6 @@ Planned features and improvements:
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
 - **Local storage workspaces** — Support multiple workspaces persisted in browser local storage instead of session, allowing users to resume work across browser sessions
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
+- **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.
+- **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
 

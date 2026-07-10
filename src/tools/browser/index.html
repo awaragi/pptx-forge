@@ -60,6 +60,24 @@
     letter-spacing: 0.02em;
   }
   .topbar .spacer { flex: 1; }
+  .ai-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg-0);
+  }
+  .ai-components-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+  }
   .output-name {
     display: flex;
     align-items: center;
@@ -287,7 +305,13 @@
     <header class="topbar">
       <div class="brand">pptx-forge</div>
       <div class="spacer"></div>
-      <button id="ai-btn" title="Copy AI reference (INSTRUCTIONS.md + lib.d.ts)">🤖 AI</button>
+      <div class="ai-group">
+        <button id="ai-btn" title="Copy AI reference">✨ AI</button>
+        <label class="ai-components-toggle" title="Include the pre-built comp/layout/frame component catalog in the copied AI reference">
+          <input type="checkbox" id="ai-components-toggle">
+          Include builtin components
+        </label>
+      </div>
       <label class="output-name">
         output:
         <input id="output-filename" value="deck" spellcheck="false">

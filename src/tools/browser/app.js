@@ -9,11 +9,16 @@ import {
 
 const THEME_NAME = 'theme.js';
 const DEFAULT_WORKSPACE_KEY = 'deck';
-// __AI_REFERENCE__ and __THEME_PLACEHOLDER__ are injected at build time by
-// scripts/build-browser.js (esbuild `define`). The theme placeholder is
-// sourced from src/sample/theme.js — the same scaffold bin/create.js copies
-// into new CLI workspaces — so both stay in sync from one file.
-const AI_REFERENCE = typeof __AI_REFERENCE__ === 'string' ? __AI_REFERENCE__ : '';
+// __AI_CHAT__, __INSTRUCTIONS__, __COMPONENTS__, __LIB_DTS__, and
+// __THEME_PLACEHOLDER__ are injected at build time by scripts/build-browser.js
+// (esbuild `define`) as raw file contents — assembly (headers, order, optional
+// components splice) happens here, not in the build script. The theme
+// placeholder is sourced from src/sample/theme.js — the same scaffold
+// bin/create.js copies into new CLI workspaces — so both stay in sync from one file.
+const AI_CHAT = typeof __AI_CHAT__ === 'string' ? __AI_CHAT__ : '';
+const INSTRUCTIONS = typeof __INSTRUCTIONS__ === 'string' ? __INSTRUCTIONS__ : '';
+const COMPONENTS = typeof __COMPONENTS__ === 'string' ? __COMPONENTS__ : '';
+const LIB_DTS = typeof __LIB_DTS__ === 'string' ? __LIB_DTS__ : '';
 const THEME_PLACEHOLDER = typeof __THEME_PLACEHOLDER__ === 'string' ? __THEME_PLACEHOLDER__ : 'export default {};\n';
 
 const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
@@ -58,6 +63,7 @@ const el = {
   dropOverlay: document.getElementById('drop-overlay'),
   statusBar: document.getElementById('status-bar'),
   aiBtn: document.getElementById('ai-btn'),
+  aiComponentsToggle: document.getElementById('ai-components-toggle'),
   aiOverlay: document.getElementById('ai-overlay'),
   aiOverlayClose: document.getElementById('ai-overlay-close'),
   aiReferenceTextarea: document.getElementById('ai-reference-textarea'),
@@ -136,13 +142,27 @@ function newProject() {
   state.active = THEME_NAME;
   state.workspaceKey = DEFAULT_WORKSPACE_KEY;
   el.outputFilename.value = DEFAULT_WORKSPACE_KEY;
+  el.aiComponentsToggle.checked = false;
   persistWorkspace();
   render();
   setStatus('Started a new project.');
 }
 
+// Reads the toggle at call time (not persisted) — the checkbox's checked
+// property is the sole source of truth for this state. Order is fixed:
+// AI-CHAT, INSTRUCTIONS, COMPONENTS (optional), lib.d.ts.
+// AI-CHAT.md/INSTRUCTIONS.md/COMPONENTS.md each already open with their own
+// "# X.md — ..." heading, so no filename header is added for them here.
+// lib.d.ts has no heading of its own, so it keeps a "# lib.d.ts" marker.
+function assembleAiReference() {
+  const parts = [AI_CHAT, INSTRUCTIONS];
+  if (el.aiComponentsToggle.checked) parts.push(COMPONENTS);
+  parts.push(`# lib.d.ts\n\n${LIB_DTS}`);
+  return parts.join('\n\n');
+}
+
 function showAiReferenceFallback() {
-  el.aiReferenceTextarea.value = AI_REFERENCE;
+  el.aiReferenceTextarea.value = assembleAiReference();
   el.aiOverlay.classList.add('visible');
   el.aiReferenceTextarea.focus();
   el.aiReferenceTextarea.select();
@@ -153,8 +173,8 @@ async function copyAiReference() {
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       throw new Error('Clipboard API unavailable');
     }
-    await navigator.clipboard.writeText(AI_REFERENCE);
-    setStatus('Copied AI reference (INSTRUCTIONS.md + lib.d.ts) to clipboard.');
+    await navigator.clipboard.writeText(assembleAiReference());
+    setStatus('Copied AI reference to clipboard.');
   } catch {
     showAiReferenceFallback();
     setStatus('Clipboard unavailable — select and copy the reference text below.', true);

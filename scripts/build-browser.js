@@ -13,10 +13,17 @@ const shellPath = resolve(root, 'src/tools/browser/index.html');
 const outPath = resolve(root, 'pptx-forge.html');
 const marker = '/*__APP_BUNDLE__*/';
 
+// Frontmatter (--- ... ---) on INSTRUCTIONS.md/COMPONENTS.md carries cross-file
+// pointers for humans/tooling reading the raw file; it's stripped here so it
+// never leaks into the AI-facing bundled reference.
+const stripFrontmatter = (text) => text.replace(/^---\n[\s\S]*?\n---\n+/, '');
+
+// Raw pieces only — app.js assembles them (headers, order, optional
+// components splice) at runtime.
 const aiChat = await readFile(resolve(root, 'AI-CHAT.md'), 'utf8');
-const instructions = await readFile(resolve(root, 'INSTRUCTIONS.md'), 'utf8');
+const instructions = stripFrontmatter(await readFile(resolve(root, 'INSTRUCTIONS.md'), 'utf8'));
+const components = stripFrontmatter(await readFile(resolve(root, 'COMPONENTS.md'), 'utf8'));
 const libDts = await readFile(resolve(root, 'lib.d.ts'), 'utf8');
-const aiReference = `# AI-CHAT.md\n\n${aiChat}\n\n# INSTRUCTIONS.md\n\n${instructions}\n\n# lib.d.ts\n\n${libDts}`;
 
 // theme.js placeholder: sourced from the CLI's own workspace scaffold so the
 // browser tool and `bin/create.js` never drift out of sync.
@@ -31,7 +38,10 @@ const result = await build({
   write: false,
   logLevel: 'info',
   define: {
-    __AI_REFERENCE__: JSON.stringify(aiReference),
+    __AI_CHAT__: JSON.stringify(aiChat),
+    __INSTRUCTIONS__: JSON.stringify(instructions),
+    __COMPONENTS__: JSON.stringify(components),
+    __LIB_DTS__: JSON.stringify(libDts),
     __THEME_PLACEHOLDER__: JSON.stringify(themePlaceholder),
   },
 });

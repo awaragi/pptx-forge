@@ -39,15 +39,19 @@ Specifically it SHALL cover:
 ### Requirement: lib object destructuring patterns
 `INSTRUCTIONS.md` SHALL document how to destructure `lib` at the top of a slide function.
 
-It SHALL show that `lib` exposes: `theme`, `prim`, `comp`, `layout`, `frame` — and that `theme` is the merged theme object (not a group of functions).
+It SHALL show that `lib` exposes: `theme`, `run`, `prim` — and that `theme` is the merged theme object (not a group of functions). It SHALL note that `lib` also exposes `comp`, `layout`, and `frame` (the pre-built component catalog and slide chrome), documented separately in `COMPONENTS.md`, and that slide files only need to destructure `comp`/`layout`/`frame` when the author has chosen to use standard components.
 
-#### Scenario: AI destructures lib correctly
-- **WHEN** an AI reads INSTRUCTIONS.md
-- **THEN** it writes `const { theme, prim, comp, layout, frame } = lib;` at the top of each slide function
+#### Scenario: AI destructures lib correctly for the components-free path
+- **WHEN** an AI reads `INSTRUCTIONS.md` only (no `COMPONENTS.md`)
+- **THEN** it writes `const { theme, run, prim } = lib;` at the top of each slide function, without referencing `comp`, `layout`, or `frame`
 
 #### Scenario: AI knows theme is not a function group
-- **WHEN** an AI reads INSTRUCTIONS.md
+- **WHEN** an AI reads `INSTRUCTIONS.md`
 - **THEN** it accesses colors as `theme.color.<name>`, grid as `theme.grid.<field>`, sizes as `theme.size.<field>`, not as `lib.theme.someFunction()`
+
+#### Scenario: AI knows comp/layout/frame exist but live in COMPONENTS.md
+- **WHEN** an AI reads `INSTRUCTIONS.md` and needs a pre-built card, KPI tile, flow diagram, section heading, or repeated header/footer/border chrome
+- **THEN** it recognizes that these are provided by `lib.comp`/`lib.layout`/`lib.frame`, documented in `COMPONENTS.md`, and asks for or uses that file rather than guessing at their shapes
 
 ---
 
@@ -112,55 +116,6 @@ It SHALL specify:
 
 ---
 
-### Requirement: lib.comp — components group
-`INSTRUCTIONS.md` SHALL document the `comp` group as pre-built composite components that combine multiple primitives, listing each with its `content` object shape:
-
-- `smallCard(slide, box, { title, body }, opts, name)`
-- `miniCard(slide, box, { title, body }, opts, name)` — semi-transparent bg variant
-- `benefitCard(slide, box, { title, body }, opts, name)` — accent stripe variant
-- `artifactCard(slide, box, { filename, purpose, step }, opts, name)`
-- `numberedStep(slide, box, { num, title, body }, opts, name)`
-- `phaseBox(slide, box, { label, steps[] }, opts, name)` — `steps` is string array joined with ` · `
-- `flowBox(slide, box, { label, highlight? }, opts, name)`
-- `flowArrow(slide, box, content, opts, name)` — `opts.vertical: true` for ↓, default is →
-- `phaseLabel(slide, box, label, opts, name)` — badge + horizontal rule
-
-#### Scenario: AI uses comp functions for cards and phases
-- **WHEN** an AI needs a card, phase box, or flow diagram element
-- **THEN** it calls the appropriate `comp.*` function and passes a properly-typed content object
-
----
-
-### Requirement: lib.layout — layout group
-`INSTRUCTIONS.md` SHALL document the `layout` group as slide-level structural elements:
-
-- `sectionTitle(slide, box|null, text, opts, name)` — bold section heading; box fields default to theme grid when omitted
-- `darkPanelHeader(slide, box, { title, subtitle? }, opts, name)` — dark bar with colored title and optional subtitle
-- `labeledDivider(slide, box, label, opts, name)` — vertical line with centered badge at midpoint
-- `calloutBanner(slide, box, text, opts, name)` — full-width dark banner with left accent strip
-- `pullQuote(slide, box, text, opts, name)` — large italic quotation-style text
-
-#### Scenario: AI uses layout for slide structure elements
-- **WHEN** an AI needs a section heading or a dividing panel header
-- **THEN** it calls the appropriate `layout.*` function
-
----
-
-### Requirement: lib.frame — frame group
-`INSTRUCTIONS.md` SHALL document the `frame` group as repeated slide chrome:
-
-- `border(slide, box, opts, name)` — outer slide border rect
-- `slideHeader(slide, box, opts, name)` — top header bar with wordmark and badge; reads from `theme.header`
-- `slideFooter(slide, box, opts, name)` — bottom footer bar; reads from `theme.footer`
-
-It SHALL note that `border`, `slideHeader`, and `slideFooter` should be called on every slide with `undefined` as the box argument (they self-position using theme grid values).
-
-#### Scenario: AI adds frame to every slide
-- **WHEN** an AI generates a slide function
-- **THEN** it calls `border(slide, undefined, {}, 'sNN-border')`, `slideHeader(slide, undefined, {}, 'sNN')`, and `slideFooter(slide, undefined, {}, 'sNN')` at the start or end of each slide
-
----
-
 ### Requirement: Object naming conventions
 `INSTRUCTIONS.md` SHALL document the PowerPoint object naming convention used as the trailing `name` argument.
 
@@ -175,11 +130,15 @@ It SHALL note that `border`, `slideHeader`, and `slideFooter` should be called o
 ---
 
 ### Requirement: Worked example — minimal compilable slide
-`INSTRUCTIONS.md` SHALL include a complete, minimal, compilable slide example that demonstrates: file structure, lib destructuring, frame call, a layout call, and a prim text call.
+`INSTRUCTIONS.md` SHALL include a complete, minimal, compilable slide example that demonstrates: file structure, `lib` destructuring (`theme`, `run`, `prim` only — no `comp`/`layout`/`frame`), and `prim` calls (text and at least one shape), composing a slide using only framework fundamentals and no pre-built chrome.
 
 #### Scenario: Example is compilable as-is
-- **WHEN** the example from INSTRUCTIONS.md is saved as `slide01-example.js` in a workspace
-- **THEN** `node compile.js <workspace>` succeeds without errors
+- **WHEN** the example from `INSTRUCTIONS.md` is saved as a slide file in a workspace
+- **THEN** `npm run forge <slug>` succeeds without errors
+
+#### Scenario: Example does not reference the component catalog or frame chrome
+- **WHEN** an AI reads the worked example in `INSTRUCTIONS.md`
+- **THEN** it sees no call to any `comp.*`, `layout.*`, or `frame.*` function, demonstrating that a complete slide is achievable with `prim` alone
 
 ---
 
@@ -195,34 +154,45 @@ It SHALL note that `border`, `slideHeader`, and `slideFooter` should be called o
 - **THEN** it does not call `slide.addText()`, `slide.addShape()`, or other raw pptxgenjs methods in slide files
 
 ### Requirement: INSTRUCTIONS.md documents theme.shape structure and workspace override pattern
-`INSTRUCTIONS.md` SHALL include a `theme.shape` subsection within the Theme Object section. It SHALL document the full two-level structure: global keys (`radius`, `borderW`) and each component namespace with all its properties and defaults. It SHALL show an example of a workspace `theme.js` `shape` export demonstrating a partial override, and explain that unspecified keys retain their defaults.
+`INSTRUCTIONS.md` SHALL include a `theme.shape` subsection within the Theme Object section, scoped to the only two properties consumed directly by `prim` functions: the global keys `radius` (rounded-rectangle corner radius, used by `prim.roundRect`) and `borderW` (default border/line stroke width, used by `prim.roundRect`/`prim.hLine`/`prim.vLine`). It SHALL show an example of a workspace `theme.js` `shape` export demonstrating a partial override of one of these, and explain that unspecified keys retain their defaults. It SHALL note that every other `theme.shape` namespace — including `frame`, `card`, `fileCard`, `flowBox`, etc. — is documented in `COMPONENTS.md` alongside the `comp`/`layout`/`frame` functions they style.
 
 #### Scenario: AI knows theme.shape exists and is overridable
-- **WHEN** an AI reads INSTRUCTIONS.md
+- **WHEN** an AI reads `INSTRUCTIONS.md`
 - **THEN** it knows that `theme.shape` contains per-component visual defaults and that workspace `theme.js` can export a `shape` object to override any subset
 
-#### Scenario: AI can document what component namespaces exist
-- **WHEN** an AI reads INSTRUCTIONS.md
-- **THEN** it can enumerate the component namespaces (`card`, `artifactCard`, `miniCard`, `divider`, `frame`, etc.) and their key properties
+#### Scenario: AI can document the framework-level shape keys
+- **WHEN** an AI reads `INSTRUCTIONS.md`
+- **THEN** it can state that only `radius` and `borderW` are documented there, and knows that all namespaced entries (including `frame`) are documented in `COMPONENTS.md`
 
 #### Scenario: AI understands partial override semantics
-- **WHEN** an AI reads INSTRUCTIONS.md
-- **THEN** it knows that `shape: { card: { borderColor: 'accent4' } }` only changes `card.borderColor` and all other shape properties remain at their defaults
+- **WHEN** an AI reads `INSTRUCTIONS.md`
+- **THEN** it knows that `shape: { borderW: 1.2 }` only changes the default border width and all other shape properties remain at their defaults
 
 ### Requirement: INSTRUCTIONS.md documents resolution order for component visual properties
-`INSTRUCTIONS.md` SHALL document the three-level resolution order for component visual properties: (1) per-call `opts` — highest priority, (2) `theme.shape.<namespace>.<prop>` — workspace-level default, (3) `defaultTheme.shape` — system default. It SHALL make clear that slide files can always override any visual property via `opts` without touching theme configuration.
+`INSTRUCTIONS.md` SHALL document the three-level resolution order for visual properties in general terms: (1) per-call `opts` — highest priority, (2) `theme.shape.<namespace>.<prop>` — workspace-level default, (3) library default. It SHALL make clear that slide files can always override any visual property via `opts` without touching theme configuration, and that the concrete namespaced keys this resolution order applies to (beyond the two global keys `radius`/`borderW`) are documented in `COMPONENTS.md`.
 
 #### Scenario: AI knows opts always win
 - **WHEN** an AI reads INSTRUCTIONS.md
-- **THEN** it understands that passing `opts.borderColor` to a component always overrides `theme.shape.card.borderColor`
+- **THEN** it understands that passing a visual property via `opts` to a component always overrides the corresponding `theme.shape.<namespace>.<prop>` value, wherever that namespace is documented
 
 #### Scenario: AI knows theme.shape is for workspace-wide defaults, not per-slide
 - **WHEN** an AI reads INSTRUCTIONS.md
 - **THEN** it uses `opts` for per-call overrides and advises setting `theme.shape` in `theme.js` only when a style change should apply to all instances of a component across the entire workspace
 
-### Requirement: INSTRUCTIONS.md includes a theme.js shape export example
-`INSTRUCTIONS.md` SHALL include a concrete example showing a workspace `theme.js` that exports a `shape` object, demonstrating how to change card borders, shadow opacity, and divider line weight. The example SHALL show partial overrides (not requiring every property to be specified).
+### Requirement: Custom components and creative flexibility guidance
+`INSTRUCTIONS.md` SHALL include guidance stating that the AI is not limited to any pre-built component library: it MAY write custom helper functions composing `prim` calls, and MAY drop to raw `pptxgenjs` APIs (`slide.addText()`, `slide.addShape()`, `slide.addImage()`, `slide.addChart()`, etc.) when neither `lib` nor `prim` covers a need. This guidance SHALL appear once, in `INSTRUCTIONS.md`, near the `prim` documentation — it applies regardless of whether `COMPONENTS.md` is also being used.
 
-#### Scenario: AI can generate a correct theme.js shape export
-- **WHEN** an AI reads INSTRUCTIONS.md
-- **THEN** it can produce a syntactically correct `theme.js` `shape` export that compiles and takes effect without specifying every property
+#### Scenario: AI builds a custom visual treatment
+- **WHEN** an AI is generating a slide and the concept calls for a layout or visual treatment not covered by any documented function
+- **THEN** it writes a custom helper composing `prim` calls, or drops to raw `pptxgenjs`, rather than forcing the concept into an ill-fitting pre-built component
+
+#### Scenario: Guidance is present whether or not COMPONENTS.md is included
+- **WHEN** an AI is given only `INSTRUCTIONS.md` and `lib.d.ts`, or is given `INSTRUCTIONS.md` + `COMPONENTS.md` + `lib.d.ts`
+- **THEN** in both cases it has read the creative-flexibility guidance, since it lives solely in `INSTRUCTIONS.md`
+
+### Requirement: INSTRUCTIONS.md references COMPONENTS.md as an optional companion
+`INSTRUCTIONS.md` SHALL state, near the top (Overview section), that a companion file `COMPONENTS.md` documents a pre-built `comp`/`layout`/`frame` catalog and is optional — to be read together with `INSTRUCTIONS.md` and `lib.d.ts` only when the author wants to use standard components and/or slide chrome.
+
+#### Scenario: AI knows to ask for COMPONENTS.md when appropriate
+- **WHEN** an AI reads `INSTRUCTIONS.md` and the user's request implies wanting standard, consistent components or repeated slide chrome (or the user has supplied `COMPONENTS.md` already)
+- **THEN** it treats `COMPONENTS.md` as the authoritative source for `comp`/`layout`/`frame` shapes, requesting it if not yet provided

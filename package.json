@@ -1,6 +1,6 @@
 {
   "name": "pptx-forget",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "type": "module",
   "scripts": {
     "forge": "node bin/forge.js",

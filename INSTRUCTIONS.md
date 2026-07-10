@@ -1,3 +1,8 @@
+---
+title: INSTRUCTIONS.md — AI Slide Authoring Reference
+companion: COMPONENTS.md (optional — pre-built comp/layout/frame catalog; include only when the author wants standard components and/or slide chrome)
+---
+
 # INSTRUCTIONS.md — AI Slide Authoring Reference
 
 > Read this file alongside `lib.d.ts(.txt)` to generate correct, compilable slide files.
@@ -10,15 +15,13 @@ JavaScript slide files compile into PowerPoint decks via [pptxgenjs](https://git
 
 **You only need two files:** `INSTRUCTIONS.md` (this file) and `lib.d.ts(.txt)` (authoritative typed signatures). If lib.d.ts is missing, prompt the user for it.
 
-**Creative freedom:** Built-in `lib` components are a starting point, not a constraint. If a concept calls for a layout or visual treatment the library doesn't cover, implement it — write custom helpers in the slide file, compose `prim` calls freely, or drop to raw pptxgenjs. The goal is the best slide for the concept, not maximum use of the component library.
-
 ---
 
 ## Workspace Structure
 
 ```
 workspaces/<slug>/
-├── theme.js       # optional — color scheme + header/footer text
+├── theme.js       # required — color scheme + header/footer text
 └── slides/        # all .js files here, sorted alphabetically → slide order
 ```
 
@@ -34,15 +37,18 @@ Default to **one file per slide** for decks with more than 3 slides.
 
 ### Deck/Slide file contract
 
-Every deck/slide file exports a default function `(pptx, lib)`. 
+Every deck/slide file exports a default function `(pptx, lib)`. At the top of the function, destructure only what you use:
 
 ```js
 export default function Slide_Or_Deck(pptx, lib) { // or Deck(pptx, lib) for a single-file deck
+  const { theme, run, prim } = lib;
   const slide = pptx.addSlide();
   slide.background = { color: theme.scheme.dk1 }; // optional
-  // render content via lib...
+  // render content via prim...
 }
 ```
+
+`theme`, `run`, and `prim` cover everything needed for a components-free deck. `lib` exposes other properties too (see `lib.d.ts`); don't destructure or guess at their shapes without documentation for them — ask for it rather than guessing.
 
 
 ---
@@ -111,11 +117,12 @@ theme.color.surfaceAlt   // e.g. 'bg2'
 ```
 Values are either hex strings (`'EEF7DF'`) or scheme-slot shorthands (`'accent1'`, `'dk1'`/`'lt1'`/`'dk2'`/`'lt2'`, or their `tx1`/`bg1`/`tx2`/`bg2` role-alias equivalents). All forms work — `createLib` resolves slot names to role aliases before they reach pptxgenjs.
 
+`theme.js` is the single source of truth for every color used in a deck. Slide/deck files MUST NOT define their own colors — not as inline hex literals, not as local constants, not as any other kind of color map or palette. Every color a slide file references must resolve back to `theme.scheme` or `theme.color`.
+
 **Color preference order:**
 1. **`theme.scheme` slots first** (`'accent1'`, `'tx1'`, `'bg1'`, etc.) — these are the PowerPoint theme palette and should be the default choice for most fills, text, and borders.
 2. **`theme.color.<name>` aliases** — semantic names defined in the workspace `theme.js`. Prefer these when you need a color that already has a semantic meaning in the workspace.
-3. **Add a new alias to `theme.color`** — if a slide genuinely needs a color not already named, add a new semantic entry in `theme.js` (e.g. `highlight: 'accent3'`) and reference it by name in the slide file.
-4. **Avoid inline hex values** — do not hardcode hex strings directly in slide files (e.g. `color: 'FF0000'`). The rare exception is a one-off decorative value with no semantic meaning, but this should be uncommon.
+3. **Add a new alias to `theme.color`** — if a slide genuinely needs a color not already named, add a new semantic entry in `theme.js` (e.g. `highlight: 'accent3'`) and reference it by name in the slide file. Never define it locally in the slide file instead.
 
 ### `theme.size` — named font sizes
 
@@ -144,43 +151,18 @@ Global keys (apply across all components):
 
 | Key | Default | Notes |
 |-----|---------|-------|
-| `radius` | `0.08` | Rounded rectangle corner radius |
-| `borderW` | `0.8` | Default border/line stroke width |
+| `radius` | `0.08` | Rounded rectangle corner radius, consumed by `prim.roundRect` |
+| `borderW` | `0.8` | Default border/line stroke width, consumed by `prim.roundRect`/`prim.hLine`/`prim.vLine` |
 
-Component namespaces and their properties:
+These two are the only `theme.shape` keys documented here. Other namespaces may exist beyond these two — same rule as above: don't guess, ask for documentation.
 
-| Namespace | Properties |
-|-----------|------------|
-| `card` | `bgColor`, `borderColor`, `accentColor`, `titleColor`, `bodyColor`, `shadow` — shared by `infoCard`, `accentCard`, `stepBox`, `numberedStep`, `challengeCard` |
-| `fileCard` | `bgColor`, `borderColor`, `filenameColor`, `purposeColor`, `stepColor` |
-| `overlayCard` | `titleColor`, `bodyColor` |
-| `phaseLabel` | `badgeColor`, `badgeTextColor`, `lineColor` |
-| `flowBox` | `bgColor`, `borderColor`, `textColor`, `highlightBgColor`, `highlightTextColor` |
-| `flowArrow` | `color` |
-| `divider` | `color`, `badgeTextColor`, `lineWidth`, `badgeW`, `badgeH`, `gap` |
-| `calloutBanner` | `bgColor`, `accentColor`, `textColor`, `accentW` — also used by `calloutQuote` |
-| `darkPanelHeader` | `bgColor`, `titleColor`, `subtitleColor` |
-| `pullQuote` | `color` |
-| `sectionTitle` | `color` |
-| `frame` | `badgeRadius`, `borderColor`, `badgeColor`, `badgeTextColor`, `wordmarkColor`, `footerLineColor`, `footerTextColor` |
-| `iconStat` | `valueColor`, `labelColor` |
-| `iconBox` | `bgColor`, `borderColor`, `iconColor`, `titleColor`, `bodyColor` |
-| `imageCard` | `imageColor`, `bgColor`, `borderColor`, `titleColor`, `bodyColor`, `shadow` |
-| `progressBar` | `fillColor`, `trackColor`, `labelColor`, `pctColor` |
-| `tagBadge` | `bgColor`, `textColor` |
-| `dataTable` | `headerBgColor`, `headerTextColor`, `rowBgColor`, `altBgColor`, `borderColor`, `textColor` |
-| `darkStat` | `bgColor`, `valueColor`, `labelColor`, `sourceColor` |
-| `teamCard` | `avatarBgColor`, `avatarTextColor` |
-| `comparisonTable` | `headerBgColor`, `headerTextColor`, `criteriaColor`, `valueColor`, `borderColor` |
-
-**Partial overrides** — `theme.js` must export a **single default object**. Include only the keys you want to change; all other properties keep their library defaults. Deep merging applies at every level, so you can override a single shadow property without touching the rest:
+**Partial overrides** — `theme.js` must export a **single default object**. Include only the keys you want to change; all other properties keep their library defaults. Deep merging applies at every level:
 
 ```js
 // theme.js — export default; include only what you need to override
 export default {
   shape: {
-    card: { borderColor: 'accent4', shadow: { opacity: 0.05 } },
-    frame: { wordmarkColor: 'accent1' },
+    borderW: 1.2,
   },
 };
 ```
@@ -219,67 +201,9 @@ Raw drawing layer. Use for text frames, basic shapes, and lines.
 
 ---
 
-## `comp` — Components
-
-Pre-built composite components — each renders multiple primitives with consistent internal layout. Use these instead of assembling cards and phase diagrams manually.
-
-### Cards
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `infoCard` | `{ title, body }` | Standard card with title + body text |
-| `overlayCard` | `{ title, body }` | Semi-transparent glassmorphic variant for dark backgrounds |
-| `accentCard` | `{ title, body }` | Card with a thin top accent bar |
-| `challengeCard` | `{ title, body }` | Card with a left accent bar — use for challenges or risks |
-| `fileCard` | `{ filename, purpose, step }` | Shows a named file/artifact with purpose + next step |
-| `numberedStep` | `{ num, title, body }` | Circle number badge + title + body |
-| `stepBox` | `{ label, steps: string[] }` | Phase/step container; steps joined with ` · ` |
-| `imageCard` | `{ image?, title, body?, imageH? }` | Card with an image placeholder band at top; swap emoji for real image in PowerPoint |
-| `iconBox` | `{ icon?, title, body? }` | Centered large icon + title + optional body |
-| `teamCard` | `{ name, role, bio? }` | Circular avatar placeholder (shows initial letter) + name + role + optional bio |
-
-### KPI & Stats
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `iconStat` | `{ value, label, icon? }` | Large KPI value + label; optional UTF-8 icon above value. `opts.fontSize` overrides value size |
-| `darkStat` | `{ value, label, source? }` | Dark-background KPI tile — use on light slides for contrast. `source` renders a small citation line at the bottom |
-
-### Flow & Process
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `flowBox` | `{ label, highlight?: boolean }` | Flow diagram box; `highlight: true` applies accent fill |
-| `flowArrow` | (unused) | Arrow connector between flow boxes; `opts.vertical: true` for ↓, default is → |
-| `stepFlow` | `items: { label, highlight? }[]` | Auto-distributes `flowBox` + `flowArrow` items across `box.w` |
-| `phaseLabel` | `label: string` (3rd arg, not object) | Accent badge + horizontal rule — use as a section divider |
-
-### Insight & Callout
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `calloutQuote` | `{ label?, quote }` | Left accent bar + optional small-caps label + quote/insight text |
-
-### Lists & Tables
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `bulletIconList` | `items: { icon, text }[]` | Icon-prefixed bullet lines; icons in `opts.iconColor`, text in `opts.textColor` |
-| `twoColumnRow` | `{ label, content }` | Left bold label / right content — stack calls to build key-value tables. `opts.splitRatio` (default `0.35`) controls column widths |
-
-### Indicators & Placeholders
-
-| Function | `content` shape | Notes |
-|----------|----------------|-------|
-| `progressBar` | `{ value, label?, showPct? }` | Horizontal fill bar; `value` is `0–1`. `showPct: true` renders a percentage label next to the fill |
-| `tagBadge` | `{ label }` | Small filled rounded-rect pill with centered label |
-| `imageHolder` | `{ icon?, label? }` | Dashed-border placeholder box with an emoji icon; user swaps for a real image in PowerPoint |
-
----
-
 ## Custom Components & Full Creative Flexibility
 
-**You are not limited to the built-in component library.** The available `comp`, `layout`, and `frame` functions are a library of useful defaults — not a ceiling on what you can produce.
+**You are not limited to the built-in component library.** The available `comp`, `layout`, and `frame` functions are a library of useful functions — not a ceiling on what you can produce.
 
 When the visual concept calls for something the library doesn't cover:
 
@@ -292,36 +216,6 @@ When the visual concept calls for something the library doesn't cover:
 **Decision rule:** reach for a built-in component when it genuinely fits the concept. When it doesn't, build what fits. Never force a concept into an ill-fitting component just because it exists.
 
 If you create something reusable and well-tested, sharing it back with the forge is highly appreciated.
-
----
-
-## `layout` — Layout
-
-Slide-level structural elements. Use for section headings, panel headers, dividers, and banners.
-
-| Function | Key notes |
-|----------|-----------|
-| `sectionTitle(slide, box\|null, text, opts, name)` | Bold h2 heading. When `box` fields are omitted or `-1`, defaults to `x: marginX, y: contentTop, w: contentW`. |
-| `darkPanelHeader(slide, box, { title, subtitle? }, opts, name)` | Dark bar. `opts`: `bgColor`, `titleColor`, `subtitleColor`, `titleW`. `box.h` defaults to `0.44`. |
-| `labeledDivider(slide, box, label, opts, name)` | Vertical line from `box.y` to `box.y + box.h` at `box.x`, with a centered label badge at midpoint. |
-| `calloutBanner(slide, box, text, opts, name)` | Full-width dark banner with thin left accent strip + centered bold italic text. |
-| `pullQuote(slide, box, text, opts, name)` | Large italic quotation-style text block. |
-
-All `layout` functions accept `text` as a plain string or `{ text: string }` object.
-
----
-
-## `frame` — Frame Chrome
-
-
-Repeated chrome that goes on **applicable slide**. Always pass `undefined` as `box` — these functions self-position using `theme.grid` and `theme.header`/`theme.footer`.
-| Function | What it renders |
-|----------|----------------|
-| `border(slide, undefined, opts, name)` | Thin outer border around the slide |
-| `slideHeader(slide, undefined, opts, name)` | Top header bar — wordmark (`theme.header.wordmark`) + badge (`theme.header.badge`) |
-| `slideFooter(slide, undefined, opts, name)` | Bottom footer bar — left and right text from `theme.footer` |
-
-If required, call at the top of deck/slide function:
 
 ---
 
@@ -351,20 +245,15 @@ Names must be **unique within a slide**.
 ```js
 // workspaces/my-deck/slides/01-example.js
 export default function Example(pptx, lib) {
-  const { theme, run, prim, comp, layout, frame } = lib;
-  const { text, roundRect } = prim;
-  const { infoCard } = comp;
-  const { sectionTitle } = layout;
-  const { border, slideHeader, slideFooter } = frame;
+  const { theme, run, prim } = lib;
+  const { text, roundRect, bullets } = prim;
 
   const slide = pptx.addSlide();
   slide.background = { color: theme.color.surface };
 
-  border(slide, undefined, {}, 's01-border');
-  slideHeader(slide, undefined, {}, 's01');
-  slideFooter(slide, undefined, {}, 's01');
-
-  sectionTitle(slide, null, 'Example Section', {}, 's01-section');
+  text(slide, { x: theme.grid.marginX, y: 0.6, w: theme.grid.contentW, h: 0.6 }, [
+    run('Example Section', { bold: true, fontSize: theme.size.h2, color: theme.color.ink }),
+  ], {}, 's01-section');
 
   text(slide, { x: theme.grid.marginX, y: 1.4, w: theme.grid.colLeftW, h: 0.5 }, [
     run('Bold intro.  ', { bold: true, color: theme.color.ink }),
@@ -374,22 +263,22 @@ export default function Example(pptx, lib) {
   roundRect(slide,
     { x: theme.grid.marginX, y: 2.1, w: theme.grid.colLeftW, h: 2.2 },
     undefined,
-    { fill: { color: theme.color.surfaceAlt }, line: { color: theme.color.border } },
+    { fill: { color: theme.color.surfaceAlt }, line: { color: 'accent6' } },
     's01-card-bg'
   );
 
-  infoCard(slide,
-    { x: theme.grid.marginX + 0.2, y: 2.3, w: theme.grid.colLeftW - 0.4, h: 1.0 },
-    { title: 'Card Title', body: 'Supporting detail text goes here.' },
-    {},
-    's01-card'
+  text(slide, { x: theme.grid.marginX + 0.2, y: 2.3, w: theme.grid.colLeftW - 0.4, h: 0.4 },
+    'Card Title', { bold: true, fontSize: theme.size.cardTitle, color: theme.color.ink }, 's01-card-title');
+
+  bullets(slide,
+    { x: theme.grid.marginX + 0.2, y: 2.7, w: theme.grid.colLeftW - 0.4, h: 1.4 },
+    ['Supporting detail one.', 'Supporting detail two.'],
+    { color: theme.color.bodyText },
+    's01-card-body'
   );
 
-  layout.pullQuote(slide,
-    { x: theme.grid.colRight, y: 1.4, w: theme.grid.colRightW, h: 1.2 },
+  text(slide, { x: theme.grid.colRight, y: 1.4, w: theme.grid.colRightW, h: 1.2 },
     '"A well-structured slide communicates at a glance."',
-    {},
-    's01-pullquote'
-  );
+    { italic: true, fontSize: theme.size.pullQuote, color: theme.color.ink }, 's01-pullquote');
 }
 ```
