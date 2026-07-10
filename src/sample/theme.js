@@ -15,18 +15,19 @@ export default {
   // },
 
   // Semantic color names used in slide files. Values can be hex strings ('EEF7DF')
-  // or scheme-slot shorthands: the six accents above, or the role aliases
-  // 'tx1'/'bg1'/'tx2'/'bg2' (PowerPoint's built-in redirects to dk1/lt1/dk2/lt2 —
-  // see INSTRUCTIONS.md's "theme.scheme" section for how those resolve).
+  // or scheme-slot shorthands: the six accents above, the slot names 'dk1'/'lt1'/'dk2'/'lt2',
+  // or their role-alias equivalents 'tx1'/'bg1'/'tx2'/'bg2' — createLib normalizes slot
+  // names to role aliases automatically, so either form works (see INSTRUCTIONS.md's
+  // "theme.scheme" section for how those resolve).
   // color: {
   //   primary:    'accent1',
   //   danger:     'accent2',
   //   warning:    'accent3',
   //   link:       'accent4',
-  //   ink:        'tx1',
-  //   surface:    'bg1',
-  //   bodyText:   'tx2',
-  //   surfaceAlt: 'bg2',
+  //   ink:        'dk1',
+  //   surface:    'lt1',
+  //   bodyText:   'dk2',
+  //   surfaceAlt: 'lt2',
   // },
 
   // Font faces — reference via theme.font.body / theme.font.mono instead of hardcoding names.

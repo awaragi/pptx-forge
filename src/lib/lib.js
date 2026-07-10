@@ -1,7 +1,7 @@
 // Factory assembler — imports all modules and wires createLib().
 // Slide files should import createLib from this file or from src/lib/index.js.
 
-import { defaultTheme, deepMerge } from './theme.js';
+import { defaultTheme, deepMerge, resolveThemeColors } from './theme.js';
 import { makePrimitives } from './primitives.js';
 import { makeComponents } from './components.js';
 import { makeTables }     from './tables.js';
@@ -19,7 +19,7 @@ export function createLib(overrides = {}) {
   run.italic = (textOrRun)           => run(textOrRun, { italic: true });
   run.color  = (textOrRun, colorVal) => run(textOrRun, { color: colorVal });
 
-  const theme = deepMerge(defaultTheme, overrides);
+  const theme = resolveThemeColors(deepMerge(defaultTheme, overrides));
   const prim   = makePrimitives(theme);
   const comp   = makeComponents(theme, prim);
   const tables = makeTables(theme, prim);

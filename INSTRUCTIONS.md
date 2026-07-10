@@ -94,7 +94,7 @@ theme.footer   // { left, right }    — used by frame.slideFooter
 
 Ten slots: `dk1`, `lt1`, `dk2`, `lt2`, `accent1`–`accent6`. Use as string shorthands in color fields — pptxgenjs resolves them at render time.
 
-PowerPoint also exposes four **role aliases** — `tx1`, `bg1`, `tx2`, `bg2` — that are not separate colors but fixed redirects onto the ten slots above: `tx1`→`dk1`, `bg1`→`lt1`, `tx2`→`dk2`, `bg2`→`lt2`. You never set `tx1`/`bg1`/`tx2`/`bg2` directly (they aren't keys in `theme.scheme`); you set `dk1`/`lt1`/`dk2`/`lt2` and use the role aliases anywhere a color is expected, including as values in `theme.color` (see below), when you want to say "the text color" or "the background color" rather than naming the underlying slot.
+PowerPoint also exposes four **role aliases** — `tx1`, `bg1`, `tx2`, `bg2` — that are not separate colors but fixed redirects onto the ten slots above: `tx1`→`dk1`, `bg1`→`lt1`, `tx2`→`dk2`, `bg2`→`lt2`. You set `dk1`/`lt1`/`dk2`/`lt2` in `theme.scheme`; anywhere a color is expected — including `theme.color` and `theme.shape` — you may write either the slot name (`dk1`/`lt1`/`dk2`/`lt2`) or the role alias (`tx1`/`bg1`/`tx2`/`bg2`); `createLib` normalizes slot names to their role alias automatically before handing colors to pptxgenjs, since pptxgenjs's own color enum only recognizes the role-alias form.
 
 ### `theme.color` — semantic workspace aliases
 
@@ -109,7 +109,7 @@ theme.color.surface      // e.g. 'bg1'
 theme.color.bodyText     // e.g. 'tx2'
 theme.color.surfaceAlt   // e.g. 'bg2'
 ```
-Values are either hex strings (`'EEF7DF'`) or scheme-slot shorthands (`'accent1'`). Both work in pptxgenjs `color` fields.
+Values are either hex strings (`'EEF7DF'`) or scheme-slot shorthands (`'accent1'`, `'dk1'`/`'lt1'`/`'dk2'`/`'lt2'`, or their `tx1`/`bg1`/`tx2`/`bg2` role-alias equivalents). All forms work — `createLib` resolves slot names to role aliases before they reach pptxgenjs.
 
 **Color preference order:**
 1. **`theme.scheme` slots first** (`'accent1'`, `'tx1'`, `'bg1'`, etc.) — these are the PowerPoint theme palette and should be the default choice for most fills, text, and borders.

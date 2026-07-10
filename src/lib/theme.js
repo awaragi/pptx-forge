@@ -232,3 +232,31 @@ export function deepMerge(defaults, overrides) {
   }
   return result;
 }
+
+// pptxgenjs only recognizes its own scheme-name enum (tx1/tx2/bg1/bg2/accent1-6) or a
+// hex string in color fields — it rejects the raw OOXML slot names dk1/lt1/dk2/lt2 that
+// theme.scheme is keyed by, silently falling back to black. dk1/lt1/dk2/lt2 and
+// tx1/bg1/tx2/bg2 are the same theme slots under PowerPoint's own role-alias rule, so
+// translate the former to the latter wherever a color is actually consumed
+// (theme.color, theme.shape) — theme.scheme itself is left alone since its values are
+// literal hex, not scheme-name references.
+const SCHEME_ROLE_ALIAS = { dk1: 'tx1', lt1: 'bg1', dk2: 'tx2', lt2: 'bg2' };
+
+function resolveSchemeRoleAliases(node) {
+  if (typeof node === 'string') return SCHEME_ROLE_ALIAS[node] || node;
+  if (Array.isArray(node)) return node.map(resolveSchemeRoleAliases);
+  if (node && typeof node === 'object') {
+    const out = {};
+    for (const key of Object.keys(node)) out[key] = resolveSchemeRoleAliases(node[key]);
+    return out;
+  }
+  return node;
+}
+
+export function resolveThemeColors(theme) {
+  return {
+    ...theme,
+    color: resolveSchemeRoleAliases(theme.color),
+    shape: resolveSchemeRoleAliases(theme.shape),
+  };
+}
