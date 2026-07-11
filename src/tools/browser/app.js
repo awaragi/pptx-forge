@@ -11,7 +11,9 @@ import {
   setStorageFailureHandler,
   setNearingQuotaHandler,
   setExternalChangeHandler,
+  hasAnyWorkspaceData,
 } from './storage.js';
+import { isHelpOpen, closeHelp, nextHelpScreen, prevHelpScreen, maybeAutoOpenHelp } from './help.js';
 
 const THEME_NAME = 'theme.js';
 const DEFAULT_WORKSPACE_NAME = 'Untitled';
@@ -756,6 +758,35 @@ function performTransfer(targetName) {
   closeTransferPicker();
 }
 
+// Single shared listener, gated by which overlay currently has .visible,
+// rather than three near-duplicate listeners: Escape closes whichever of
+// the three overlays is open, and Left/Right additionally pages the help
+// modal when it's the one that's open.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (isHelpOpen()) {
+      e.preventDefault();
+      closeHelp();
+    } else if (el.aiOverlay.classList.contains('visible')) {
+      e.preventDefault();
+      el.aiOverlay.classList.remove('visible');
+    } else if (el.transferOverlay.classList.contains('visible')) {
+      e.preventDefault();
+      closeTransferPicker();
+    }
+    return;
+  }
+
+  if (!isHelpOpen()) return;
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    nextHelpScreen();
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    prevHelpScreen();
+  }
+});
+
 el.editor.addEventListener('input', () => {
   const entry = getActiveEntry();
   if (!entry) return;
@@ -847,8 +878,14 @@ window.addEventListener('drop', async (e) => {
   }
 });
 
+// Checked before restoreOrCreateActiveWorkspace() runs, since that call
+// unconditionally auto-creates a default workspace and would otherwise make
+// "no workspace yet" unobservable by the time we could check for it.
+const isFirstVisit = !hasAnyWorkspaceData();
+
 if (VERSION) el.appVersion.textContent = `v${VERSION}`;
 
 restoreOrCreateActiveWorkspace();
 renderWorkspaceSelect();
 render();
+maybeAutoOpenHelp(isFirstVisit);

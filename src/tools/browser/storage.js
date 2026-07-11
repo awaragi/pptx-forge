@@ -3,6 +3,7 @@
 // inconsistent across browsers (private browsing, hardened configs, quota limits).
 const WORKSPACES_KEY = 'pptx-forge.workspaces';
 const ACTIVE_KEY = 'pptx-forge.activeWorkspace';
+const HELP_SEEN_KEY = 'pptx-forge.helpSeen';
 
 // Conservative assumption: several browsers cap localStorage around 5MB/origin.
 // Warn well before a write is likely to actually fail.
@@ -64,6 +65,37 @@ export function estimateUsageBytes() {
     return raw.length * 2; // rough UTF-16 byte estimate
   } catch {
     return 0;
+  }
+}
+
+// Direct read of the raw workspaces key, safe to call before the
+// default-workspace auto-create logic runs (which would otherwise make
+// "no workspace" unobservable). Used solely for first-visit detection.
+export function hasAnyWorkspaceData() {
+  try {
+    const raw = localStorage.getItem(WORKSPACES_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    return Boolean(parsed) && typeof parsed === 'object' && Object.keys(parsed).length > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function hasSeenHelp() {
+  try {
+    return localStorage.getItem(HELP_SEEN_KEY) === '1';
+  } catch {
+    handleFailure();
+    return false;
+  }
+}
+
+export function markHelpSeen() {
+  try {
+    localStorage.setItem(HELP_SEEN_KEY, '1');
+  } catch {
+    handleFailure();
   }
 }
 
