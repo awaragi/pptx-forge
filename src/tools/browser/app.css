@@ -190,7 +190,6 @@ button:disabled { opacity: 0.5; cursor: default; }
   border-left-color: var(--accent);
 }
 .file-tree li.placeholder .node-name { color: var(--text-dim); font-style: italic; }
-.file-tree li.slide-item { padding-left: 24px; }
 .file-tree li.has-actions { gap: 6px; }
 .node-actions {
   display: flex;

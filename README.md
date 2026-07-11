@@ -209,3 +209,4 @@ Planned features and improvements:
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
 - **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
+- **Responsive design** — Improve layout adaptability for different screen sizes and resolutions
