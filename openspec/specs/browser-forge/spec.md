@@ -151,9 +151,9 @@ The system SHALL provide a Forge action that compiles the `theme.js` entry's def
 - **WHEN** the user runs Forge without having changed `theme.js` from its default placeholder
 - **THEN** the compiled deck uses the rendering library's default theme, equivalent to running the CLI with no `theme.js` present
 
-#### Scenario: Forge output filename is user-editable
-- **WHEN** the user sets an output filename before clicking Forge
-- **THEN** the downloaded file uses that name (with a `.pptx` extension) rather than a fixed default
+#### Scenario: Forge output filename derives from the active workspace name
+- **WHEN** the user clicks Forge
+- **THEN** the downloaded file's base name is the active workspace's name, sanitized for use as a filename, with a `.pptx` extension
 
 #### Scenario: A failing file surfaces a readable error
 - **WHEN** one of the loaded files throws an error while being imported or executed (e.g. a syntax error or a runtime exception)
@@ -173,4 +173,15 @@ The system SHALL provide a Reset action, available only when the active file is 
 #### Scenario: Reset is cancellable
 - **WHEN** the user clicks Reset and declines the confirmation prompt
 - **THEN** the `theme.js` content is unchanged
+
+### Requirement: Optional timestamp suffix on forge output filename
+The system SHALL provide a toggle control, off by default, that when enabled appends a timestamp to the forge output filename after the active workspace's sanitized name, and does not otherwise affect the active workspace's name or identity.
+
+#### Scenario: Timestamp toggle appends a timestamp
+- **WHEN** the user enables the timestamp toggle and clicks Forge
+- **THEN** the downloaded file's name is the active workspace's sanitized name followed by a timestamp, before the `.pptx` extension
+
+#### Scenario: Timestamp toggle off uses the workspace name alone
+- **WHEN** the timestamp toggle is off (its default state) and the user clicks Forge
+- **THEN** the downloaded file's name matches the active workspace's sanitized name alone, with no timestamp appended
 
