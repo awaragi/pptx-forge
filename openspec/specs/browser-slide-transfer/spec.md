@@ -37,10 +37,14 @@ The system SHALL provide a Copy action on the active slide file that, after the 
 - **THEN** no candidate in the picker is selectable
 
 ### Requirement: theme.js is excluded from move and copy
-The system SHALL NOT offer Move or Copy actions for the `theme.js` entry.
+The system SHALL NOT offer Move or Copy actions for the `theme.js` or `masters.js` entries.
 
 #### Scenario: No transfer controls shown for theme.js
 - **WHEN** the active file is `theme.js`
+- **THEN** neither a Move nor a Copy control is shown for it
+
+#### Scenario: No transfer controls shown for masters.js
+- **WHEN** the active file is `masters.js`
 - **THEN** neither a Move nor a Copy control is shown for it
 
 ### Requirement: Escape key closes the transfer picker overlay

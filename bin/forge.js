@@ -9,6 +9,7 @@ import { resolve, join, basename, dirname } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import pptxgen from 'pptxgenjs';
 import { createLib } from '../src/lib/lib.js';
+import { applyMasters } from '../src/lib/masters.js';
 import open from 'open';
 
 const args = process.argv.slice(2);
@@ -89,17 +90,38 @@ const slidesDir = join(wsDir, 'slides');
 const outDir = join(wsDir, 'out');
 await mkdir(outDir, { recursive: true });
 
-// Load workspace theme overrides (optional)
-let themeOverrides = {};
-try {
-  const themeUrl = pathToFileURL(join(wsDir, 'theme.js')).href;
-  const mod = await import(themeUrl);
-  themeOverrides = mod.default ?? mod;
-} catch {
-  // no theme.js — use library defaults
+// Loads an optional workspace override module. A missing file is not an error —
+// the caller falls back to library defaults. Anything else (syntax error, throw
+// during module evaluation) is a real bug in the workspace file and must fail the
+// build loudly instead of silently compiling with defaults.
+async function loadOptionalModule(filePath, label) {
+  try {
+    await stat(filePath);
+  } catch (err) {
+    if (err.code === 'ENOENT') return undefined;
+    throw err;
+  }
+  try {
+    const mod = await import(pathToFileURL(filePath).href);
+    return mod.default ?? mod;
+  } catch (err) {
+    console.error(`Error: failed to load ${label}:\n`);
+    console.error(err.stack || err.message);
+    process.exit(1);
+  }
 }
 
-const lib = createLib(themeOverrides);
+const themeOverrides = (await loadOptionalModule(join(wsDir, 'theme.js'), 'theme.js')) ?? {};
+const masterOverrides = await loadOptionalModule(join(wsDir, 'masters.js'), 'masters.js');
+
+let lib;
+try {
+  lib = createLib(themeOverrides, masterOverrides);
+} catch (err) {
+  console.error(`Error: ${err.message}`);
+  console.error((err.cause && err.cause.stack) || err.stack);
+  process.exit(1);
+}
 
 // Discover and sort slide files (or use the single file given in single-file mode)
 const slideFiles = singleSlidePath
@@ -120,10 +142,30 @@ pptx.defineLayout({ name: 'CUSTOM_WIDE', width: 13.333, height: 7.5 });
 pptx.layout = 'CUSTOM_WIDE';
 pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial', lang: 'en-US' };
 
+try {
+  applyMasters(pptx, lib.masterDefinitions);
+} catch (err) {
+  console.error(`Error: failed to register slide masters from masters.js:\n`);
+  console.error(err.stack || err.message);
+  process.exit(1);
+}
+
 for (const filePath of slideFiles) {
-  const slideUrl = pathToFileURL(filePath).href;
-  const mod = await import(slideUrl);
-  mod.default(pptx, lib);
+  let mod;
+  try {
+    mod = await import(pathToFileURL(filePath).href);
+  } catch (err) {
+    console.error(`Error: failed to load ${basename(filePath)}:\n`);
+    console.error(err.stack || err.message);
+    process.exit(1);
+  }
+  try {
+    mod.default(pptx, lib);
+  } catch (err) {
+    console.error(`Error: ${basename(filePath)} threw while rendering:\n`);
+    console.error(err.stack || err.message);
+    process.exit(1);
+  }
   console.log(`  + ${basename(filePath)}`);
 }
 

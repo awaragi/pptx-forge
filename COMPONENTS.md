@@ -101,6 +101,8 @@ Repeated chrome that goes on **applicable slides**. Always pass `undefined` as `
 
 If required, call at the top of the deck/slide function.
 
+`frame.*` is a manual, per-slide alternative to defining a slide master (see `INSTRUCTIONS.md`'s `lib.masters` section): a slide that calls `frame.border`/`frame.slideHeader`/`frame.slideFooter` directly draws its own one-off chrome instead of inheriting it from a `masterName`, which is useful for chrome variations that don't warrant a dedicated master. `tables.dataTable`/`comparisonTable` (and any `addTable`-shaped content) cannot be used inside a slide master at all — pptxgenjs's master `objects` union has no `table` variant.
+
 ---
 
 ## `theme.shape` — component-specific namespaces

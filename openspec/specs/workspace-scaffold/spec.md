@@ -11,7 +11,7 @@ Defines the interactive `bin/create.js` script that bootstraps a new named works
 
 #### Scenario: Happy path — new workspace name
 - **WHEN** the user runs `node bin/create.js` and enters a valid name (e.g. `my-deck`)
-- **THEN** the script creates `workspaces/my-deck/theme.js` and `workspaces/my-deck/slides/deck.js`, then prints next-step instructions including `npm run forge my-deck`
+- **THEN** the script creates `workspaces/my-deck/theme.js`, `workspaces/my-deck/masters.js`, and `workspaces/my-deck/slides/deck.js`, then prints next-step instructions including `npm run forge my-deck`
 
 #### Scenario: Workspace already exists
 - **WHEN** the user enters a name that matches an existing directory under `workspaces/`
@@ -33,8 +33,8 @@ The workspace name entered by the user SHALL be used verbatim as the directory n
 - **THEN** the workspace is created at `workspaces/My Deck/` with no transformation applied
 
 ### Requirement: Template files copied without modification
-`bin/create.js` SHALL copy `src/sample/theme.js` and `src/sample/slides/deck.js` into the new workspace, preserving the relative directory structure, without modifying file content.
+`bin/create.js` SHALL copy `src/sample/theme.js`, `src/sample/masters.js`, and `src/sample/slides/deck.js` into the new workspace, preserving the relative directory structure, without modifying file content.
 
 #### Scenario: Template files are copied as-is
 - **WHEN** a workspace is successfully created
-- **THEN** `workspaces/<name>/theme.js` is byte-identical to `src/sample/theme.js` and `workspaces/<name>/slides/deck.js` is byte-identical to `src/sample/slides/deck.js`
+- **THEN** `workspaces/<name>/theme.js` is byte-identical to `src/sample/theme.js`, `workspaces/<name>/masters.js` is byte-identical to `src/sample/masters.js`, and `workspaces/<name>/slides/deck.js` is byte-identical to `src/sample/slides/deck.js`

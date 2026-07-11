@@ -45,6 +45,7 @@ await cp(src, dest, { recursive: true });
 
 console.log(`\nCreated workspace: workspaces/${name}/`);
 console.log(`  workspaces/${name}/theme.js`);
+console.log(`  workspaces/${name}/masters.js`);
 console.log(`  workspaces/${name}/slides/deck.js`);
 console.log(`\nNext steps:`);
 console.log(`  Edit workspaces/${name}/theme.js to set your colors, header, and footer.`);

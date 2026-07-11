@@ -27,9 +27,10 @@ const instructions = stripFrontmatter(await readFile(resolve(root, 'INSTRUCTIONS
 const components = stripFrontmatter(await readFile(resolve(root, 'COMPONENTS.md'), 'utf8'));
 const libDts = await readFile(resolve(root, 'lib.d.ts'), 'utf8');
 
-// theme.js placeholder: sourced from the CLI's own workspace scaffold so the
-// browser tool and `bin/create.js` never drift out of sync.
+// theme.js/masters.js placeholders: sourced from the CLI's own workspace scaffold
+// so the browser tool and `bin/create.js` never drift out of sync.
 const themePlaceholder = await readFile(resolve(root, 'src/sample/theme.js'), 'utf8');
+const mastersPlaceholder = await readFile(resolve(root, 'src/sample/masters.js'), 'utf8');
 
 const { version } = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 
@@ -47,6 +48,7 @@ const result = await build({
     __COMPONENTS__: JSON.stringify(components),
     __LIB_DTS__: JSON.stringify(libDts),
     __THEME_PLACEHOLDER__: JSON.stringify(themePlaceholder),
+    __MASTERS_PLACEHOLDER__: JSON.stringify(mastersPlaceholder),
     __VERSION__: JSON.stringify(version),
   },
 });

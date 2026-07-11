@@ -16,18 +16,21 @@ import {
 import { isHelpOpen, closeHelp, nextHelpScreen, prevHelpScreen, maybeAutoOpenHelp } from './help.js';
 
 const THEME_NAME = 'theme.js';
+const MASTERS_NAME = 'masters.js';
 const DEFAULT_WORKSPACE_NAME = 'Untitled';
-// __AI_CHAT__, __INSTRUCTIONS__, __COMPONENTS__, __LIB_DTS__, and
-// __THEME_PLACEHOLDER__ are injected at build time by scripts/build-browser.js
+// __AI_CHAT__, __INSTRUCTIONS__, __COMPONENTS__, __LIB_DTS__, __THEME_PLACEHOLDER__,
+// and __MASTERS_PLACEHOLDER__ are injected at build time by scripts/build-browser.js
 // (esbuild `define`) as raw file contents — assembly (headers, order, optional
-// components splice) happens here, not in the build script. The theme
-// placeholder is sourced from src/sample/theme.js — the same scaffold
-// bin/create.js copies into new CLI workspaces — so both stay in sync from one file.
+// components splice) happens here, not in the build script. The theme/masters
+// placeholders are sourced from src/sample/theme.js and src/sample/masters.js — the
+// same scaffolds bin/create.js copies into new CLI workspaces — so both stay in sync
+// from one file each.
 const AI_CHAT = typeof __AI_CHAT__ === 'string' ? __AI_CHAT__ : '';
 const INSTRUCTIONS = typeof __INSTRUCTIONS__ === 'string' ? __INSTRUCTIONS__ : '';
 const COMPONENTS = typeof __COMPONENTS__ === 'string' ? __COMPONENTS__ : '';
 const LIB_DTS = typeof __LIB_DTS__ === 'string' ? __LIB_DTS__ : '';
 const THEME_PLACEHOLDER = typeof __THEME_PLACEHOLDER__ === 'string' ? __THEME_PLACEHOLDER__ : 'export default {};\n';
+const MASTERS_PLACEHOLDER = typeof __MASTERS_PLACEHOLDER__ === 'string' ? __MASTERS_PLACEHOLDER__ : 'export default function (theme) {\n  return [];\n};\n';
 const VERSION = typeof __VERSION__ === 'string' ? __VERSION__ : '';
 
 const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
@@ -38,12 +41,13 @@ const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
 };
 `;
 
-// State: theme is a fixed singleton entry; slides is a name-keyed map of
-// { name, content } compiled/displayed in ascending filename order.
-// workspaceName is both the localStorage key this state is saved under
-// (see storage.js) and the base name used for forge/export output.
+// State: theme and masters are fixed singleton entries (pinned, in that sidebar
+// order); slides is a name-keyed map of { name, content } compiled/displayed in
+// ascending filename order. workspaceName is both the localStorage key this state
+// is saved under (see storage.js) and the base name used for forge/export output.
 const state = {
   theme: { name: THEME_NAME, content: THEME_PLACEHOLDER },
+  masters: { name: MASTERS_NAME, content: MASTERS_PLACEHOLDER },
   slides: new Map(),
   active: THEME_NAME,
   workspaceName: DEFAULT_WORKSPACE_NAME,
@@ -117,8 +121,14 @@ setExternalChangeHandler((workspaces) => {
   setStatus('Synced from another tab.');
 });
 
-function isThemePlaceholder(content) {
-  return content === THEME_PLACEHOLDER;
+function isPinnedName(name) {
+  return name === THEME_NAME || name === MASTERS_NAME;
+}
+
+function isPinnedPlaceholder(name, content) {
+  if (name === THEME_NAME) return content === THEME_PLACEHOLDER;
+  if (name === MASTERS_NAME) return content === MASTERS_PLACEHOLDER;
+  return false;
 }
 
 function sortedSlideNames() {
@@ -126,7 +136,9 @@ function sortedSlideNames() {
 }
 
 function getActiveEntry() {
-  return state.active === THEME_NAME ? state.theme : state.slides.get(state.active);
+  if (state.active === THEME_NAME) return state.theme;
+  if (state.active === MASTERS_NAME) return state.masters;
+  return state.slides.get(state.active);
 }
 
 function setStatus(message, isError = false) {
@@ -135,7 +147,7 @@ function setStatus(message, isError = false) {
 }
 
 function currentWorkspaceSnapshot() {
-  const snapshot = { [THEME_NAME]: state.theme.content };
+  const snapshot = { [THEME_NAME]: state.theme.content, [MASTERS_NAME]: state.masters.content };
   for (const [name, entry] of state.slides) snapshot[name] = entry.content;
   return snapshot;
 }
@@ -155,12 +167,13 @@ function applyWorkspace(name, snapshot) {
   const previousActive = state.active;
   state.workspaceName = name;
   state.theme.content = snapshot[THEME_NAME] ?? THEME_PLACEHOLDER;
+  state.masters.content = snapshot[MASTERS_NAME] ?? MASTERS_PLACEHOLDER;
   state.slides.clear();
   for (const [fileName, content] of Object.entries(snapshot)) {
-    if (fileName === THEME_NAME) continue;
+    if (isPinnedName(fileName)) continue;
     state.slides.set(fileName, { name: fileName, content });
   }
-  state.active = previousActive === THEME_NAME || state.slides.has(previousActive) ? previousActive : THEME_NAME;
+  state.active = isPinnedName(previousActive) || state.slides.has(previousActive) ? previousActive : THEME_NAME;
 }
 
 // Restores the last-active workspace on load; if none is recorded (or it no
@@ -182,7 +195,7 @@ function restoreOrCreateActiveWorkspace() {
     return;
   }
 
-  const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+  const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER, [MASTERS_NAME]: MASTERS_PLACEHOLDER };
   writeWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
   setActiveWorkspaceName(DEFAULT_WORKSPACE_NAME);
   applyWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
@@ -218,7 +231,7 @@ function createWorkspace() {
     setStatus(`"${name}" already exists — choose a different name.`, true);
     return;
   }
-  const snapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+  const snapshot = { [THEME_NAME]: THEME_PLACEHOLDER, [MASTERS_NAME]: MASTERS_PLACEHOLDER };
   writeWorkspace(name, snapshot);
   setActiveWorkspaceName(name);
   applyWorkspace(name, snapshot);
@@ -238,7 +251,7 @@ function deleteActiveWorkspace() {
     applyWorkspace(nextName, readWorkspace(nextName));
     setActiveWorkspaceName(nextName);
   } else {
-    const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+    const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER, [MASTERS_NAME]: MASTERS_PLACEHOLDER };
     writeWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
     setActiveWorkspaceName(DEFAULT_WORKSPACE_NAME);
     applyWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
@@ -337,14 +350,21 @@ async function copyAiReference() {
   }
 }
 
-function resetTheme() {
-  if (state.active !== THEME_NAME) return;
-  if (!window.confirm('Reset theme.js to its default placeholder? This cannot be undone.')) return;
-  state.theme.content = THEME_PLACEHOLDER;
-  el.editor.value = state.theme.content;
+function resetPinnedFile() {
+  const isTheme = state.active === THEME_NAME;
+  const isMasters = state.active === MASTERS_NAME;
+  if (!isTheme && !isMasters) return;
+  const name = isTheme ? THEME_NAME : MASTERS_NAME;
+  if (!window.confirm(`Reset ${name} to its default placeholder? This cannot be undone.`)) return;
+  if (isTheme) {
+    state.theme.content = THEME_PLACEHOLDER;
+  } else {
+    state.masters.content = MASTERS_PLACEHOLDER;
+  }
+  el.editor.value = getActiveEntry().content;
   persistWorkspace();
   render();
-  setStatus('Reset theme.js to the default placeholder.');
+  setStatus(`Reset ${name} to the default placeholder.`);
 }
 
 function nodeNameSpan(name) {
@@ -358,19 +378,21 @@ function render() {
   el.themeList.innerHTML = '';
   el.fileList.innerHTML = '';
 
-  const themeLi = document.createElement('li');
-  themeLi.dataset.name = THEME_NAME;
-  const themeActive = state.active === THEME_NAME;
-  themeLi.classList.toggle('active', themeActive);
-  themeLi.classList.toggle('has-actions', themeActive);
-  themeLi.classList.toggle('placeholder', isThemePlaceholder(state.theme.content));
-  if (themeActive) {
-    themeLi.appendChild(el.nodeActions);
-  } else {
-    themeLi.appendChild(nodeNameSpan(THEME_NAME));
+  for (const pinned of [state.theme, state.masters]) {
+    const li = document.createElement('li');
+    li.dataset.name = pinned.name;
+    const isActive = state.active === pinned.name;
+    li.classList.toggle('active', isActive);
+    li.classList.toggle('has-actions', isActive);
+    li.classList.toggle('placeholder', isPinnedPlaceholder(pinned.name, pinned.content));
+    if (isActive) {
+      li.appendChild(el.nodeActions);
+    } else {
+      li.appendChild(nodeNameSpan(pinned.name));
+    }
+    li.addEventListener('click', () => selectFile(pinned.name));
+    el.themeList.appendChild(li);
   }
-  themeLi.addEventListener('click', () => selectFile(THEME_NAME));
-  el.themeList.appendChild(themeLi);
 
   for (const name of sortedSlideNames()) {
     const li = document.createElement('li');
@@ -394,18 +416,18 @@ function render() {
     el.editor.value = entry.content;
   }
 
-  const isTheme = state.active === THEME_NAME;
-  el.discardBtn.style.display = isTheme ? 'none' : '';
-  el.resetBtn.style.display = isTheme ? '' : 'none';
-  el.moveBtn.style.display = isTheme ? 'none' : '';
-  el.copyBtn.style.display = isTheme ? 'none' : '';
-  el.filenameGroup.classList.toggle('renamable', !isTheme);
+  const isPinned = isPinnedName(state.active);
+  el.discardBtn.style.display = isPinned ? 'none' : '';
+  el.resetBtn.style.display = isPinned ? '' : 'none';
+  el.moveBtn.style.display = isPinned ? 'none' : '';
+  el.copyBtn.style.display = isPinned ? 'none' : '';
+  el.filenameGroup.classList.toggle('renamable', !isPinned);
   el.nodeActionsButtons.style.display = renaming ? 'none' : '';
   if (!renaming) {
     el.activeFilename.style.display = '';
     el.renameInput.style.display = 'none';
     el.renameExt.style.display = 'none';
-    el.renameBtn.style.display = isTheme ? 'none' : '';
+    el.renameBtn.style.display = isPinned ? 'none' : '';
   }
 }
 
@@ -427,6 +449,8 @@ function addOrReplaceFile(name, content) {
 
   if (name === THEME_NAME) {
     state.theme.content = content;
+  } else if (name === MASTERS_NAME) {
+    state.masters.content = content;
   } else if (state.slides.has(name)) {
     state.slides.get(name).content = content;
   } else {
@@ -536,6 +560,7 @@ async function exportWorkspace() {
   try {
     const blob = await exportWorkspaceZip({
       theme: state.theme,
+      masters: state.masters,
       slides: sortedSlideNames().map((name) => state.slides.get(name)),
     });
     triggerDownload(blob, `${sanitizeOutputName(state.workspaceName)}.zip`);
@@ -546,7 +571,7 @@ async function exportWorkspace() {
 }
 
 function discardActiveFile() {
-  if (state.active === THEME_NAME) return;
+  if (isPinnedName(state.active)) return;
   const name = state.active;
   if (!window.confirm(`Discard ${name}? This cannot be undone.`)) return;
   state.slides.delete(name);
@@ -561,7 +586,7 @@ function basenameOf(name) {
 }
 
 function startRename() {
-  if (state.active === THEME_NAME || renaming) return;
+  if (isPinnedName(state.active) || renaming) return;
   renaming = true;
   el.renameInput.value = basenameOf(state.active);
   el.activeFilename.style.display = 'none';
@@ -614,7 +639,7 @@ function commitRename(keepEditingOnFailure) {
   if (/[\\/]/.test(newBase)) return fail('the name cannot contain "/" or "\\".');
 
   const newName = `${newBase}.js`;
-  if (newName === THEME_NAME) return fail(`"${THEME_NAME}" is reserved.`);
+  if (isPinnedName(newName)) return fail(`"${newName}" is reserved.`);
   if (state.slides.has(newName)) return fail(`"${newName}" already exists.`);
 
   const entry = state.slides.get(oldName);
@@ -645,15 +670,22 @@ async function forge() {
   try {
     const blob = await compileDeck({
       theme: state.theme,
+      masters: state.masters,
       slides: slideNames.map((name) => state.slides.get(name)),
       outputName,
     });
     triggerDownload(blob, `${outputName}.pptx`);
     setStatus(`Generated ${outputName}.pptx`);
   } catch (err) {
+    // CompileError.message is already "file.js: <error>[ (file.js:line:col)]" —
+    // log the full cause (with stack) to the console for devtools inspection,
+    // and surface the same detail in the status bar so the failure isn't just
+    // "there's an error somewhere in this file" with no further clue.
     if (err instanceof CompileError) {
-      setStatus(`Failed in ${err.fileName}: ${err.cause && err.cause.message ? err.cause.message : err.cause}`, true);
+      console.error(err.message, err.cause);
+      setStatus(`Failed in ${err.message}`, true);
     } else {
+      console.error(err);
       setStatus(`Forge failed: ${err.message}`, true);
     }
   } finally {
@@ -684,7 +716,7 @@ function workspaceHasFile(name, fileName) {
 }
 
 function openTransferPicker(mode) {
-  if (state.active === THEME_NAME) return;
+  if (isPinnedName(state.active)) return;
   transferMode = mode;
   transferSlideName = state.active;
   el.transferOverlayTitle.textContent = mode === 'move'
@@ -791,7 +823,7 @@ el.editor.addEventListener('input', () => {
   const entry = getActiveEntry();
   if (!entry) return;
   entry.content = el.editor.value;
-  if (entry === state.theme) {
+  if (entry === state.theme || entry === state.masters) {
     // Re-render just enough to update the placeholder/muted styling.
     render();
   }
@@ -799,7 +831,7 @@ el.editor.addEventListener('input', () => {
 });
 
 el.addSlideBtn.addEventListener('click', addBlankSlide);
-el.resetBtn.addEventListener('click', resetTheme);
+el.resetBtn.addEventListener('click', resetPinnedFile);
 el.loadFilesBtn.addEventListener('click', () => el.fileInput.click());
 el.fileInput.addEventListener('change', async (e) => {
   await handleFiles(e.target.files);

@@ -22,6 +22,7 @@ JavaScript slide files compile into PowerPoint decks via [pptxgenjs](https://git
 ```
 workspaces/<slug>/
 ├── theme.js       # required — color scheme + header/footer text
+├── masters.js     # optional — adds/overrides slide master definitions
 └── slides/        # all .js files here, sorted alphabetically → slide order
 ```
 
@@ -180,6 +181,54 @@ prim.text(slide, box, [
   run('Body text', { color: theme.color.bodyText }),
 ], { fontSize: 14 }, 's01-title');
 ```
+
+---
+
+## `lib.masters` — Slide Masters
+
+`lib.masters` is a plain array of every registered PowerPoint slide master title, e.g. `['BLANK']`. It's populated from the library's default master plus any workspace `masters.js`. `lib.masters` exists purely for discovery — to start a slide on a specific master, pass its title as a literal string to `pptx.addSlide({ masterName: '<title>' })`, not by looking it up through `lib.masters`.
+
+A workspace may add `workspaces/<slug>/masters.js` alongside `theme.js`. It's optional — a deck without one simply uses the library's default `BLANK` master. Its default export is a **factory function**, `(theme) => SlideMasterProps[]`, returning plain pptxgenjs `SlideMasterProps` objects: `{ title, background?, objects?, slideNumber?, margin? }`, with `title` mandatory and unique. This factory is called **once per compile**, not once per slide — write it as a pure function of `theme` with no side effects. A returned entry whose `title` matches a library default replaces that default entry wholesale; a new `title` is added alongside the defaults.
+
+`comp`/`layout`/`prim`/`tables` do **not** apply inside a master factory — masters are plain pptxgenjs object literals, parameterized only by `theme`. Read colors, sizes, and geometry from `theme` (e.g. `theme.shape.frame.borderColor`, `theme.grid.marginX`, `theme.header.wordmark`) instead of hardcoding literals, so workspace theme overrides cascade into the master automatically.
+
+Inside `objects`, use the raw pptxgenjs shapes directly:
+
+```js
+{ rect:  { x, y, w, h, fill: { color }, line: { color, width } } }          // rectangles — always sharp corners, see below
+{ line:  { x, y, w, h, line: { color, width } } }                            // lines — a different key, not a `rect` shape variant
+{ text:  { text: 'Some text', options: { x, y, w, h, fontSize, color } } }   // text — `text` is a plain string, not a run[] array
+```
+
+**`rect` is always a sharp-cornered rectangle inside a master.** Unlike `prim.roundRect` on a regular slide, pptxgenjs's master `objects` has no roundRect variant — `rect` is hardcoded to a plain rectangle, and a `rectRadius` option has no visual effect there (it's silently ignored). If a design needs rounded corners, that's only achievable via `frame.*`/`prim.roundRect` on individual slides, not inside a master.
+
+`table`-shaped content (`tables.dataTable`/`comparisonTable`, or any `addTable`-equivalent descriptor) cannot be used inside a master — pptxgenjs's master `objects` union has no `table` variant. Images and charts (`{ image: ... }`/`{ chart: ... }`) are technically supported but not documented here.
+
+**Worked example:**
+
+```js
+// workspaces/my-deck/masters.js
+export default function (theme) {
+  return [
+    { title: 'CONTENT', objects: [
+      { rect: { x: 0.12, y: 0.12, w: 13.09, h: 7.26,
+                line: { color: theme.shape.frame.borderColor, width: theme.shape.borderW } } },
+      { text: { text: theme.header.wordmark,
+                options: { x: theme.grid.marginX, y: 0.42, w: 5.5, h: 0.25, fontSize: theme.size.sectionLabel, bold: true } } },
+    ] },
+  ];
+}
+```
+
+```js
+// workspaces/my-deck/slides/01-example.js
+export default function Example(pptx, lib) {
+  const slide = pptx.addSlide({ masterName: 'CONTENT' });
+  // render slide-specific content...
+}
+```
+
+Once a deck defines masters beyond `BLANK`, prefer `pptx.addSlide({ masterName: '<title>' })` over a bare `pptx.addSlide()`.
 
 ---
 

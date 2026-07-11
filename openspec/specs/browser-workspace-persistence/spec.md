@@ -8,11 +8,11 @@ The system SHALL, on page load, check `localStorage` for the active-workspace po
 
 #### Scenario: Reload restores prior state
 - **WHEN** the user has edited files, then reloads the page (same tab)
-- **THEN** the editor and sidebar show the same active workspace's theme and slide content as before the reload, with no prompt shown
+- **THEN** the editor and sidebar show the same active workspace's theme, masters, and slide content as before the reload, with no prompt shown
 
 #### Scenario: First-ever load auto-creates a default workspace
 - **WHEN** the page is opened with no workspace data in `localStorage` (e.g. first visit)
-- **THEN** a default workspace is created and activated automatically, starting in the default blank state (placeholder `theme.js`, no slides), with no prompt shown
+- **THEN** a default workspace is created and activated automatically, starting in the default blank state (placeholder `theme.js`, placeholder `masters.js`, no slides), with no prompt shown
 
 #### Scenario: No workspaces remain after deletion falls back the same way
 - **WHEN** the page is opened and the previously active workspace no longer exists in storage (e.g. it was the last one and was deleted in another tab)
@@ -38,10 +38,10 @@ The system SHALL detect when a `localStorage` read or write fails (e.g. unavaila
 - **THEN** the one-time hard-failure warning is still shown as normal, and the tool continues operating on in-memory state only
 
 ### Requirement: Multi-workspace autosave to localStorage
-The system SHALL persist the active workspace's `theme.js` and slide file contents to `localStorage`, keyed by the workspace's name, writing on every change to file content, file set, or file names, and SHALL track which workspace is active via a separate `localStorage` key.
+The system SHALL persist the active workspace's `theme.js`, `masters.js`, and slide file contents to `localStorage`, keyed by the workspace's name, writing on every change to file content, file set, or file names, and SHALL track which workspace is active via a separate `localStorage` key.
 
 #### Scenario: Editing a file triggers a save
-- **WHEN** the user edits the content of the active file (theme or slide)
+- **WHEN** the user edits the content of the active file (theme, masters, or slide)
 - **THEN** the active workspace's entry in `localStorage` is updated to reflect the new content
 
 #### Scenario: Adding, discarding, or renaming a slide triggers a save
@@ -56,7 +56,7 @@ The system SHALL provide a switcher control listing every workspace currently in
 - **THEN** the editor and sidebar update to show that workspace's theme and slide content, and it becomes the active workspace
 
 ### Requirement: Create a new workspace with an explicit name
-The system SHALL provide a "New Workspace" action that prompts the user for a name before creating anything, and, if no workspace with that name already exists, creates a new workspace in the default blank state (placeholder `theme.js`, no slides) and activates it, leaving all other workspaces unchanged. If a workspace with the entered name already exists, the system SHALL NOT create or overwrite anything and SHALL report the collision so the user can choose a different name.
+The system SHALL provide a "New Workspace" action that prompts the user for a name before creating anything, and, if no workspace with that name already exists, creates a new workspace in the default blank state (placeholder `theme.js`, placeholder `masters.js`, no slides) and activates it, leaving all other workspaces unchanged. If a workspace with the entered name already exists, the system SHALL NOT create or overwrite anything and SHALL report the collision so the user can choose a different name.
 
 #### Scenario: Creating a workspace with a unique name
 - **WHEN** the user clicks New Workspace and enters a name that does not match any existing workspace

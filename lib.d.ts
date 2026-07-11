@@ -3,6 +3,13 @@
 // Box shapes are declared inline per function — each function only exposes the
 // geometry fields it actually uses, communicating intent to both callers and AI.
 
+import type PptxGenJS from 'pptxgenjs';
+
+export type SlideMasterProps = PptxGenJS.SlideMasterProps;
+
+/** A workspace/library master factory — called once per compile with the resolved theme. */
+export type MasterFactory = (theme: Lib['theme']) => SlideMasterProps[];
+
 // ── Run helpers ───────────────────────────────────────────────────────────────
 
 /** A pptxgenjs text run object produced by the `run` helper. */
@@ -579,6 +586,10 @@ export interface Lib {
   tables: TablesGroup;
   layout: LayoutGroup;
   frame:  FrameGroup;
+  /** Registered slide master titles (library default plus any workspace `masters.js`), for discovery. Pass a title directly to `pptx.addSlide({ masterName })`. */
+  masters: string[];
+  /** The merged, plain `SlideMasterProps[]` backing `masters` — generated once by `createLib`, for orchestrator use with `applyMasters`. */
+  masterDefinitions: SlideMasterProps[];
 }
 
-export function createLib(overrides?: Record<string, any>): Lib;
+export function createLib(themeOverrides?: Record<string, any>, masterOverrides?: MasterFactory): Lib;

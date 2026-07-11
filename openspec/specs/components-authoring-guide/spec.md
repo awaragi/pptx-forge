@@ -51,9 +51,15 @@ A file `COMPONENTS.md` SHALL exist at the project root alongside `INSTRUCTIONS.m
 
 It SHALL note that all three functions are called with `undefined` as the `box` argument — they self-position using `theme.grid` and `theme.header`/`theme.footer` rather than taking explicit coordinates.
 
+It SHALL also note that `frame.*` is a manual, per-slide alternative to defining a slide master (documented in `INSTRUCTIONS.md`): a slide that calls `frame.border`/`frame.slideHeader`/`frame.slideFooter` directly draws its own one-off chrome instead of inheriting it from a `masterName`, which is useful for chrome variations that don't warrant a dedicated master.
+
 #### Scenario: AI adds frame chrome to every slide when using components
 - **WHEN** an AI has been given `COMPONENTS.md` and is building a deck that should have a consistent header/footer/border
 - **THEN** it calls `frame.border(slide, undefined, opts, name)`, `frame.slideHeader(slide, undefined, opts, name)`, and `frame.slideFooter(slide, undefined, opts, name)` on each applicable slide, passing `undefined` for `box`
+
+#### Scenario: AI knows frame is a manual alternative to a master
+- **WHEN** an AI has been given `COMPONENTS.md` and a specific slide needs one-off chrome that no defined master provides
+- **THEN** it calls `frame.*` directly on that slide instead of (or in addition to) using `masterName`
 
 ### Requirement: COMPONENTS.md documents component-specific theme.shape namespaces
 `COMPONENTS.md` SHALL document the `theme.shape` namespaces that style `comp`/`layout`/`frame` functions: `frame`, `card`, `fileCard`, `overlayCard`, `phaseLabel`, `flowBox`, `flowArrow`, `divider`, `calloutBanner`, `darkPanelHeader`, `pullQuote`, `sectionTitle`, `iconStat`, `iconBox`, `imageCard`, `progressBar`, `tagBadge`, `dataTable`, `darkStat`, `teamCard`, `comparisonTable` — each with its properties and defaults. It SHALL note that only the global `radius`/`borderW` keys are documented in `INSTRUCTIONS.md` instead, since those two are consumed directly by `prim` functions independent of any catalog function.
