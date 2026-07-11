@@ -51,7 +51,7 @@
 - [ ] 7.5 `INSTRUCTIONS.md`: add guidance encouraging `pptx.addSlide({ masterName: '<title>' })` (a literal string) as the default way to start a slide when masters beyond `BLANK` are defined — self-contained, no comparison to `frame.*`, explicit that `lib.masters` is for discovery only.
 - [ ] 7.6 `INSTRUCTIONS.md`: add a complete worked example — a minimal `masters.js` factory (one custom master using a theme constant) plus a slide file using `masterName`.
 - [ ] 7.7 `COMPONENTS.md`: update the `lib.frame` section to note `frame.*` is a manual, one-off alternative to a dedicated master.
-- [ ] 7.8 `COMPONENTS.md`/`INSTRUCTIONS.md`: document that `tables`/`addTable`/`addMedia` cannot be used inside a master — a hard pptxgenjs limitation, not a planned future capability.
+- [ ] 7.8 `COMPONENTS.md`/`INSTRUCTIONS.md`: document that `tables`/`addTable`-shaped content cannot be used inside a master — a hard pptxgenjs limitation (no `table` variant exists), not a planned future capability. Note, alongside the placeholder disclosure, that images/charts (`{ image: ... }`/`{ chart: ... }`) are technically supported but intentionally undocumented — not the same hard limitation as tables.
 
 ## 8. Verification
 

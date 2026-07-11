@@ -104,8 +104,12 @@ Since a master factory's return value is passed straight through to `pptx.define
 - **THEN** it does not include `placeholder` among the documented/recommended descriptor types, even though it would work if used
 
 ### Requirement: comp/layout/prim/tables are not usable inside a master factory
-Since masters are plain pptxgenjs object literals parameterized only by `theme`, `comp`, `layout`, `prim`, and `tables` functions SHALL NOT appear anywhere in a master factory. `tables`-shaped content (and any `addTable`/`addMedia`-equivalent descriptor) SHALL NOT be representable at all, since pptxgenjs's master `objects` union has no `table`/`media` variant — this is independent of authoring mechanism.
+Since masters are plain pptxgenjs object literals parameterized only by `theme`, `comp`, `layout`, `prim`, and `tables` functions SHALL NOT appear anywhere in a master factory. `tables`-shaped content (and any `addTable`-equivalent descriptor) SHALL NOT be representable at all, since pptxgenjs's master `objects` union has no `table` variant — this is independent of authoring mechanism. Images and charts, by contrast, *are* representable via raw `{ image: ... }`/`{ chart: ... }` descriptors passed straight through by `applyMasters` — the same undocumented-but-technically-supported status as placeholders (see "Placeholders are supported by pptxgenjs but undocumented and unadvertised"), not a hard limitation like `table`.
 
 #### Scenario: Documentation states library functions are not usable in masters
 - **WHEN** `INSTRUCTIONS.md`/`COMPONENTS.md` document what a master factory may contain
 - **THEN** they state that `prim`/`comp`/`layout`/`tables` functions do not apply — the factory returns plain pptxgenjs descriptors, parameterized only by `theme`
+
+#### Scenario: Documentation states only table content is unrepresentable, not image/chart
+- **WHEN** `INSTRUCTIONS.md`/`COMPONENTS.md` document what a master's `objects` array cannot contain
+- **THEN** they state that `table`-shaped content is impossible (no `table` variant exists in pptxgenjs's master `objects` union), without claiming the same for images or charts, which are technically supported (undocumented) via `{ image: ... }`/`{ chart: ... }`

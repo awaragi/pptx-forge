@@ -37,7 +37,7 @@ The system SHALL replace an existing sidebar entry's content, without changing i
 - **THEN** the existing `masters.js` entry's content is replaced and it is no longer rendered in the muted placeholder style
 
 ### Requirement: Sidebar order follows filename sort
-The system SHALL display and compile non-`theme.js`, non-`masters.js` sidebar entries in ascending filename order. `theme.js` and `masters.js` are pinned entries, excluded from this sort.
+The system SHALL display and compile non-`theme.js`, non-`masters.js` sidebar entries in ascending filename order. `theme.js` and `masters.js` are pinned entries, excluded from this sort, and always appear in that fixed relative order — `theme.js` first, then `masters.js` — ahead of every slide file.
 
 #### Scenario: Entries sorted regardless of load order
 - **WHEN** the user adds `slide-03.js` before `slide-01.js`
@@ -46,6 +46,10 @@ The system SHALL display and compile non-`theme.js`, non-`masters.js` sidebar en
 #### Scenario: theme.js and masters.js are not part of the alphabetical sort
 - **WHEN** the sidebar is rendered
 - **THEN** `theme.js` and `masters.js` appear in their fixed pinned positions, not interleaved alphabetically among slide files
+
+#### Scenario: theme.js is pinned above masters.js
+- **WHEN** the sidebar is rendered
+- **THEN** `theme.js` appears above `masters.js`, regardless of load order or which was edited more recently
 
 ### Requirement: Editor toolbar provides download, discard, and rename actions
 The system SHALL present the currently active file's actions as icon buttons in the editor toolbar: Download, and either Discard or Reset depending on the active file, plus Rename. The Rename affordance (a pencil icon) SHALL be displayed immediately next to the active filename, and clicking the filename text itself SHALL also trigger rename. When the active file is `theme.js` or `masters.js`, Discard and Rename SHALL NOT be available, and a Reset action SHALL be shown in Discard's toolbar position instead.

@@ -1,11 +1,11 @@
 ## MODIFIED Requirements
 
-### Requirement: Namespace grouping — prim, comp, layout, frame, masters, run
-`createLib` SHALL return an object with four function-namespace groups: `prim`, `comp`, `layout`, and `frame`. Each group SHALL be a plain object whose values are the functions belonging to that group. The `theme` object SHALL also be returned at the top level. `createLib` SHALL additionally accept an optional second parameter, `masterOverrides` — a factory function `(theme) => SlideMasterProps[]`, or absent. `createLib` SHALL resolve `theme`, invoke the library's default master factory and (if provided) `masterOverrides` with that `theme`, merge the results by title exactly once, and return two additional members: `masters` — a plain array of every registered title (e.g. `masters === ['BLANK']`) — and `masterDefinitions` — the merged plain `SlideMasterProps[]` array, for orchestrator use in registering masters on `pptx`. `masters` is distinct in kind from the function groups since it's an array of strings, not a group of functions. The `run` helper function (with its sub-helpers `run.bold`, `run.italic`, `run.color`) SHALL be returned as a top-level export named `run`. Callers SHALL destructure `const { theme, prim, comp, layout, frame, masters, run } = lib`.
+### Requirement: Namespace grouping — prim, comp, tables, layout, frame, masters, run
+`createLib` SHALL return an object with five function-namespace groups: `prim`, `comp`, `tables`, `layout`, and `frame`. Each group SHALL be a plain object whose values are the functions belonging to that group. The `theme` object SHALL also be returned at the top level. `createLib` SHALL additionally accept an optional second parameter, `masterOverrides` — a factory function `(theme) => SlideMasterProps[]`, or absent. `createLib` SHALL resolve `theme`, invoke the library's default master factory and (if provided) `masterOverrides` with that `theme`, merge the results by title exactly once, and return two additional members: `masters` — a plain array of every registered title (e.g. `masters === ['BLANK']`) — and `masterDefinitions` — the merged plain `SlideMasterProps[]` array, for orchestrator use in registering masters on `pptx`. `masters` is distinct in kind from the function groups since it's an array of strings, not a group of functions. The `run` helper function (with its sub-helpers `run.bold`, `run.italic`, `run.color`) SHALL be returned as a top-level export named `run`. Callers SHALL destructure `const { theme, prim, comp, tables, layout, frame, masters, run } = lib`.
 
 #### Scenario: Groups are destructurable from lib
-- **WHEN** a slide file calls `const { prim, comp, layout, frame, masters, theme, run } = lib`
-- **THEN** all seven are defined and non-null
+- **WHEN** a slide file calls `const { prim, comp, tables, layout, frame, masters, theme, run } = lib`
+- **THEN** all eight are defined and non-null
 
 #### Scenario: Individual functions are destructurable from groups
 - **WHEN** a slide file calls `const { text, roundRect } = lib.prim`
