@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Source split into eight modules
-The `src/lib/` directory SHALL contain exactly these files after the change: `theme.js`, `primitives.js`, `components.js`, `tables.js`, `layout.js`, `frame.js`, `masters.js`, `lib.js` (factory), plus a barrel re-export at `src/lib/index.js`. Each file SHALL contain only the concerns named by its filename. `masters.js` SHALL contain the default master definitions, the private draw-call recorder, and `applyMasters` — no other module SHALL implement master-registration logic.
+The `src/lib/` directory SHALL contain exactly these files after the change: `theme.js`, `primitives.js`, `components.js`, `tables.js`, `layout.js`, `frame.js`, `masters.js`, `lib.js` (factory), plus a barrel re-export at `src/lib/index.js`. Each file SHALL contain only the concerns named by its filename. `masters.js` SHALL contain the default master definitions, `mergeMastersByTitle`, and `applyMasters` — no other module SHALL implement master-registration logic.
 
 #### Scenario: All module files exist in src/lib/
 - **WHEN** the `src/lib/` directory is listed
