@@ -205,7 +205,6 @@ If you create something reusable and well-tested, sharing it back with the forge
 Planned features and improvements:
 
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
-- **Version display in browser tool** — Show the version number in `pptx-forge.html` UI so users can easily identify which version they're running
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
 - **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.

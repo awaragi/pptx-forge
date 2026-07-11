@@ -31,6 +31,8 @@ const libDts = await readFile(resolve(root, 'lib.d.ts'), 'utf8');
 // browser tool and `bin/create.js` never drift out of sync.
 const themePlaceholder = await readFile(resolve(root, 'src/sample/theme.js'), 'utf8');
 
+const { version } = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
+
 const result = await build({
   entryPoints: [entry],
   bundle: true,
@@ -45,6 +47,7 @@ const result = await build({
     __COMPONENTS__: JSON.stringify(components),
     __LIB_DTS__: JSON.stringify(libDts),
     __THEME_PLACEHOLDER__: JSON.stringify(themePlaceholder),
+    __VERSION__: JSON.stringify(version),
   },
 });
 

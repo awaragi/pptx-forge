@@ -52,6 +52,11 @@ html, body {
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+.version-tag {
+  font-weight: 400;
+  font-size: 0.75em;
+  color: var(--text-dim);
+}
 .topbar .spacer { flex: 1; }
 .ai-group {
   display: flex;

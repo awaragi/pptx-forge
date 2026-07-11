@@ -26,6 +26,7 @@ const INSTRUCTIONS = typeof __INSTRUCTIONS__ === 'string' ? __INSTRUCTIONS__ : '
 const COMPONENTS = typeof __COMPONENTS__ === 'string' ? __COMPONENTS__ : '';
 const LIB_DTS = typeof __LIB_DTS__ === 'string' ? __LIB_DTS__ : '';
 const THEME_PLACEHOLDER = typeof __THEME_PLACEHOLDER__ === 'string' ? __THEME_PLACEHOLDER__ : 'export default {};\n';
+const VERSION = typeof __VERSION__ === 'string' ? __VERSION__ : '';
 
 const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
   const { theme, prim, comp, tables, layout, frame } = lib;
@@ -53,6 +54,7 @@ let transferMode = null; // 'move' | 'copy', while the transfer picker is open
 let transferSlideName = null;
 
 const el = {
+  appVersion: document.getElementById('app-version'),
   themeList: document.getElementById('theme-list'),
   fileList: document.getElementById('file-list'),
   nodeActions: document.getElementById('node-actions'),
@@ -844,6 +846,8 @@ window.addEventListener('drop', async (e) => {
     await handleFiles(e.dataTransfer.files);
   }
 });
+
+if (VERSION) el.appVersion.textContent = `v${VERSION}`;
 
 restoreOrCreateActiveWorkspace();
 renderWorkspaceSelect();
