@@ -106,6 +106,8 @@ Open the generated `pptx-forge.html` in a browser and:
 
 Only `.js` files are accepted, and Forge requires at least one slide file besides `theme.js`. This tool has no special sandboxing around the code it runs — it's meant for the same trusted, local use case as the CLI, just without requiring Node.
 
+Import/export workspace zips follow a strict layout: `theme.js` at the root, slide files under `slides/`. Import requires `theme.js` at the root or it fails with an error; any other entries in the zip (stray files, `.js` files outside `slides/`, nested folders) are silently ignored.
+
 ## Authoring slides
 
 Each slide file exports a default function:
@@ -208,4 +210,3 @@ Planned features and improvements:
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
 - **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
-- **Workspace import validation** - validate that the zip workspace import has the correct files (theme.js, slides/*.js) and structure, and provide user feedback if not

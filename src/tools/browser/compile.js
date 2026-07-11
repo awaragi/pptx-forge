@@ -70,24 +70,36 @@ export async function compileDeck({ theme, slides, outputName }) {
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
-// theme: { name, content }; slides: [{ name, content }, ...]. Produces a flat
-// zip (no folders) so it round-trips with readWorkspaceZip below.
+const SLIDE_ZIP_PATH = /^slides\/([^/]+\.js)$/i;
+
+// theme: { name, content }; slides: [{ name, content }, ...]. Produces the
+// canonical workspace zip layout: theme.js at the root, slides under
+// slides/ — the exact structure readWorkspaceZip below requires on import.
 export async function exportWorkspaceZip({ theme, slides }) {
   const zip = new JSZip();
   zip.file(theme.name, theme.content);
-  for (const slide of slides) zip.file(slide.name, slide.content);
+  for (const slide of slides) zip.file(`slides/${slide.name}`, slide.content);
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
-// Reads a dropped/selected .zip File into a flat { name: content } map,
-// keeping only .js entries — the same .js-only rule loose file import uses.
+// Reads a dropped/selected .zip File into a flat { name: content } map.
+// Enforces the strict workspace layout: theme.js must sit at the zip root
+// (missing it is a hard failure) and slides must live directly under
+// slides/*.js. Anything else in the archive — stray files, nested folders,
+// slide-shaped files outside slides/ — is silently ignored, not an error.
 export async function readWorkspaceZip(file) {
   const zip = await JSZip.loadAsync(file);
-  const files = {};
+  const themeEntry = zip.file('theme.js');
+  if (!themeEntry) {
+    throw new Error('missing theme.js at the root of the zip.');
+  }
+
+  const files = { 'theme.js': await themeEntry.async('string') };
   for (const entry of Object.values(zip.files)) {
-    if (entry.dir || !/\.js$/i.test(entry.name)) continue;
-    const name = entry.name.split('/').pop();
-    files[name] = await entry.async('string');
+    if (entry.dir) continue;
+    const match = entry.name.match(SLIDE_ZIP_PATH);
+    if (!match) continue;
+    files[match[1]] = await entry.async('string');
   }
   return files;
 }
