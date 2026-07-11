@@ -9,9 +9,11 @@ import { fileURLToPath } from 'url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const entry = resolve(root, 'src/tools/browser/app.js');
+const cssPath = resolve(root, 'src/tools/browser/app.css');
 const shellPath = resolve(root, 'src/tools/browser/index.html');
 const outPath = resolve(root, 'pptx-forge.html');
-const marker = '/*__APP_BUNDLE__*/';
+const scriptMarker = '/*__APP_BUNDLE__*/';
+const styleMarker = '/*__APP_STYLES__*/';
 
 // Frontmatter (--- ... ---) on INSTRUCTIONS.md/COMPONENTS.md carries cross-file
 // pointers for humans/tooling reading the raw file; it's stripped here so it
@@ -47,12 +49,18 @@ const result = await build({
 });
 
 const bundleCode = result.outputFiles[0].text;
+const appCss = await readFile(cssPath, 'utf8');
 const shell = await readFile(shellPath, 'utf8');
 
-if (!shell.includes(marker)) {
-  throw new Error(`Marker ${marker} not found in ${shellPath}`);
+if (!shell.includes(styleMarker)) {
+  throw new Error(`Marker ${styleMarker} not found in ${shellPath}`);
+}
+if (!shell.includes(scriptMarker)) {
+  throw new Error(`Marker ${scriptMarker} not found in ${shellPath}`);
 }
 
-const html = shell.replace(marker, () => bundleCode);
+const html = shell
+  .replace(styleMarker, () => appCss)
+  .replace(scriptMarker, () => bundleCode);
 await writeFile(outPath, html);
 console.log(`Generated: ${outPath} (${(html.length / 1024).toFixed(0)} KB)`);

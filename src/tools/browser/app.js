@@ -1,14 +1,20 @@
-import { compileDeck, CompileError } from './compile.js';
+import { compileDeck, CompileError, exportWorkspaceZip, readWorkspaceZip } from './compile.js';
 import {
-  readWorkspaces,
-  writeWorkspaces,
+  listWorkspaceNames,
+  workspaceExists,
+  readWorkspace,
+  writeWorkspace,
+  deleteWorkspace,
+  renameWorkspace,
   getActiveWorkspaceName,
   setActiveWorkspaceName,
   setStorageFailureHandler,
+  setNearingQuotaHandler,
+  setExternalChangeHandler,
 } from './storage.js';
 
 const THEME_NAME = 'theme.js';
-const DEFAULT_WORKSPACE_KEY = 'deck';
+const DEFAULT_WORKSPACE_NAME = 'Untitled';
 // __AI_CHAT__, __INSTRUCTIONS__, __COMPONENTS__, __LIB_DTS__, and
 // __THEME_PLACEHOLDER__ are injected at build time by scripts/build-browser.js
 // (esbuild `define`) as raw file contents — assembly (headers, order, optional
@@ -31,33 +37,47 @@ const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
 
 // State: theme is a fixed singleton entry; slides is a name-keyed map of
 // { name, content } compiled/displayed in ascending filename order.
-// workspaceKey mirrors the output filename and is the sessionStorage key
-// this state is saved under (see storage.js).
+// workspaceName is both the localStorage key this state is saved under
+// (see storage.js) and the base name used for forge/export output.
 const state = {
   theme: { name: THEME_NAME, content: THEME_PLACEHOLDER },
   slides: new Map(),
   active: THEME_NAME,
-  workspaceKey: DEFAULT_WORKSPACE_KEY,
+  workspaceName: DEFAULT_WORKSPACE_NAME,
 };
 
 let newSlideCounter = 1;
 let renaming = false;
+let workspaceRenaming = false;
+let transferMode = null; // 'move' | 'copy', while the transfer picker is open
+let transferSlideName = null;
 
 const el = {
+  themeList: document.getElementById('theme-list'),
   fileList: document.getElementById('file-list'),
+  nodeActions: document.getElementById('node-actions'),
+  nodeActionsButtons: document.getElementById('node-actions-buttons'),
   editor: document.getElementById('editor'),
   activeFilename: document.getElementById('active-filename'),
   filenameGroup: document.getElementById('filename-group'),
   renameInput: document.getElementById('rename-input'),
   renameExt: document.getElementById('rename-ext'),
-  outputFilename: document.getElementById('output-filename'),
+  workspaceSelect: document.getElementById('workspace-select'),
+  workspaceRenameInput: document.getElementById('workspace-rename-input'),
+  workspaceRenameBtn: document.getElementById('workspace-rename-btn'),
+  workspaceImportBtn: document.getElementById('workspace-import-btn'),
+  workspaceExportBtn: document.getElementById('workspace-export-btn'),
+  workspaceDeleteBtn: document.getElementById('workspace-delete-btn'),
+  workspaceNewBtn: document.getElementById('workspace-new-btn'),
+  timestampToggle: document.getElementById('timestamp-toggle'),
   forgeBtn: document.getElementById('forge-btn'),
   downloadBtn: document.getElementById('download-btn'),
   discardBtn: document.getElementById('discard-btn'),
   resetBtn: document.getElementById('reset-btn'),
   renameBtn: document.getElementById('rename-btn'),
+  moveBtn: document.getElementById('move-btn'),
+  copyBtn: document.getElementById('copy-btn'),
   addSlideBtn: document.getElementById('add-slide-btn'),
-  newProjectBtn: document.getElementById('new-project-btn'),
   loadFilesBtn: document.getElementById('load-files-btn'),
   fileInput: document.getElementById('file-input'),
   dropOverlay: document.getElementById('drop-overlay'),
@@ -67,10 +87,30 @@ const el = {
   aiOverlay: document.getElementById('ai-overlay'),
   aiOverlayClose: document.getElementById('ai-overlay-close'),
   aiReferenceTextarea: document.getElementById('ai-reference-textarea'),
+  transferOverlay: document.getElementById('transfer-overlay'),
+  transferOverlayTitle: document.getElementById('transfer-overlay-title'),
+  transferTargetList: document.getElementById('transfer-target-list'),
+  transferOverlayClose: document.getElementById('transfer-overlay-close'),
 };
 
 setStorageFailureHandler(() => {
-  setStatus("Session persistence unavailable — changes won't survive a reload.", true);
+  setStatus("Persistent storage unavailable — changes won't survive a reload.", true);
+});
+
+setNearingQuotaHandler(() => {
+  setStatus('Storage is getting full — consider deleting unused workspaces.');
+});
+
+// Fires when another tab writes a change; only applied here if it touches
+// the workspace this tab has open and this tab isn't mid-edit.
+setExternalChangeHandler((workspaces) => {
+  if (document.activeElement === el.editor) return;
+  const snapshot = workspaces[state.workspaceName];
+  if (!snapshot) return;
+  applyWorkspace(state.workspaceName, snapshot);
+  renderWorkspaceSelect();
+  render();
+  setStatus('Synced from another tab.');
 });
 
 function isThemePlaceholder(content) {
@@ -96,56 +136,168 @@ function currentWorkspaceSnapshot() {
   return snapshot;
 }
 
-// Writes the in-memory state into sessionStorage under state.workspaceKey and
+// Writes the in-memory state into localStorage under state.workspaceName and
 // keeps the active-workspace pointer in sync. Called on every state mutation.
 function persistWorkspace() {
-  const workspaces = readWorkspaces();
-  workspaces[state.workspaceKey] = currentWorkspaceSnapshot();
-  writeWorkspaces(workspaces);
-  setActiveWorkspaceName(state.workspaceKey);
+  writeWorkspace(state.workspaceName, currentWorkspaceSnapshot());
+  setActiveWorkspaceName(state.workspaceName);
 }
 
-// Loads the last-active workspace from sessionStorage, if any, before the
-// first render — a silent reload-and-resume with no user-facing prompt.
-function restoreActiveWorkspace() {
-  const activeName = getActiveWorkspaceName();
-  if (!activeName) return;
-  const workspaces = readWorkspaces();
-  const snapshot = workspaces[activeName];
-  if (!snapshot) return;
-
-  state.workspaceKey = activeName;
-  el.outputFilename.value = activeName;
+// Replaces in-memory state with a stored snapshot under the given workspace
+// name. Keeps the currently active file selected if it still exists in the
+// new snapshot (e.g. a cross-tab sync of the same workspace), otherwise
+// falls back to theme.js.
+function applyWorkspace(name, snapshot) {
+  const previousActive = state.active;
+  state.workspaceName = name;
+  state.theme.content = snapshot[THEME_NAME] ?? THEME_PLACEHOLDER;
   state.slides.clear();
-  for (const [name, content] of Object.entries(snapshot)) {
-    if (name === THEME_NAME) {
-      state.theme.content = content;
-    } else {
-      state.slides.set(name, { name, content });
-    }
+  for (const [fileName, content] of Object.entries(snapshot)) {
+    if (fileName === THEME_NAME) continue;
+    state.slides.set(fileName, { name: fileName, content });
+  }
+  state.active = previousActive === THEME_NAME || state.slides.has(previousActive) ? previousActive : THEME_NAME;
+}
+
+// Restores the last-active workspace on load; if none is recorded (or it no
+// longer exists — e.g. the last workspace was deleted), auto-creates and
+// activates a default workspace so one is always open. Adopts a pre-existing
+// "Untitled" workspace instead of overwriting it, if one happens to exist.
+function restoreOrCreateActiveWorkspace() {
+  const activeName = getActiveWorkspaceName();
+  const snapshot = activeName ? readWorkspace(activeName) : null;
+  if (activeName && snapshot) {
+    applyWorkspace(activeName, snapshot);
+    return;
+  }
+
+  const existingDefault = readWorkspace(DEFAULT_WORKSPACE_NAME);
+  if (existingDefault) {
+    setActiveWorkspaceName(DEFAULT_WORKSPACE_NAME);
+    applyWorkspace(DEFAULT_WORKSPACE_NAME, existingDefault);
+    return;
+  }
+
+  const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+  writeWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
+  setActiveWorkspaceName(DEFAULT_WORKSPACE_NAME);
+  applyWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
+}
+
+function renderWorkspaceSelect() {
+  const names = listWorkspaceNames();
+  el.workspaceSelect.innerHTML = '';
+  for (const name of names) {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    opt.selected = name === state.workspaceName;
+    el.workspaceSelect.appendChild(opt);
   }
 }
 
-// Renaming the output filename switches to (and persists under) a new
-// workspace key, leaving whatever was last saved under the old key in place.
-function handleOutputNameChange() {
-  const newKey = sanitizeOutputName(el.outputFilename.value);
-  if (newKey === state.workspaceKey) return;
-  state.workspaceKey = newKey;
-  persistWorkspace();
+function switchWorkspace(name) {
+  if (name === state.workspaceName) return;
+  const snapshot = readWorkspace(name);
+  if (!snapshot) return;
+  applyWorkspace(name, snapshot);
+  setActiveWorkspaceName(name);
+  renderWorkspaceSelect();
+  render();
+  setStatus(`Switched to "${name}".`);
 }
 
-function newProject() {
-  if (!window.confirm('Start a new project? The editor will reset to a blank workspace.')) return;
-  state.theme.content = THEME_PLACEHOLDER;
-  state.slides.clear();
-  state.active = THEME_NAME;
-  state.workspaceKey = DEFAULT_WORKSPACE_KEY;
-  el.outputFilename.value = DEFAULT_WORKSPACE_KEY;
-  el.aiComponentsToggle.checked = false;
-  persistWorkspace();
+function createWorkspace() {
+  const name = (window.prompt('Name this workspace:') || '').trim();
+  if (!name) return;
+  if (workspaceExists(name)) {
+    setStatus(`"${name}" already exists — choose a different name.`, true);
+    return;
+  }
+  const snapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+  writeWorkspace(name, snapshot);
+  setActiveWorkspaceName(name);
+  applyWorkspace(name, snapshot);
+  renderWorkspaceSelect();
   render();
-  setStatus('Started a new project.');
+  setStatus(`Created workspace "${name}".`);
+}
+
+function deleteActiveWorkspace() {
+  const name = state.workspaceName;
+  if (!window.confirm(`Delete workspace "${name}"? This cannot be undone.`)) return;
+  deleteWorkspace(name);
+
+  const remaining = listWorkspaceNames();
+  if (remaining.length > 0) {
+    const nextName = remaining[0];
+    applyWorkspace(nextName, readWorkspace(nextName));
+    setActiveWorkspaceName(nextName);
+  } else {
+    const blankSnapshot = { [THEME_NAME]: THEME_PLACEHOLDER };
+    writeWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
+    setActiveWorkspaceName(DEFAULT_WORKSPACE_NAME);
+    applyWorkspace(DEFAULT_WORKSPACE_NAME, blankSnapshot);
+  }
+  renderWorkspaceSelect();
+  render();
+  setStatus(`Deleted workspace "${name}".`);
+}
+
+function startWorkspaceRename() {
+  if (workspaceRenaming) return;
+  workspaceRenaming = true;
+  el.workspaceRenameInput.value = state.workspaceName;
+  el.workspaceSelect.style.display = 'none';
+  el.workspaceRenameBtn.style.display = 'none';
+  el.workspaceRenameInput.style.display = 'inline-block';
+  el.workspaceRenameInput.focus();
+  el.workspaceRenameInput.select();
+}
+
+function exitWorkspaceRenameMode() {
+  workspaceRenaming = false;
+  el.workspaceRenameInput.style.display = 'none';
+  el.workspaceSelect.style.display = '';
+  el.workspaceRenameBtn.style.display = '';
+}
+
+function cancelWorkspaceRename() {
+  if (!workspaceRenaming) return;
+  exitWorkspaceRenameMode();
+}
+
+// keepEditingOnFailure: true while the user can still type (Enter key) —
+// stays in the input so they can fix the name. false on blur, where focus
+// is already gone, so an invalid name just reverts.
+function commitWorkspaceRename(keepEditingOnFailure) {
+  if (!workspaceRenaming) return;
+  const oldName = state.workspaceName;
+  const newName = el.workspaceRenameInput.value.trim();
+
+  if (newName === oldName) {
+    exitWorkspaceRenameMode();
+    return;
+  }
+
+  const fail = (message) => {
+    setStatus(`Rename failed — ${message}`, true);
+    if (keepEditingOnFailure) {
+      el.workspaceRenameInput.focus();
+      el.workspaceRenameInput.select();
+    } else {
+      exitWorkspaceRenameMode();
+    }
+  };
+
+  if (!newName) return fail('a name is required.');
+  if (!renameWorkspace(oldName, newName)) return fail(`"${newName}" already exists.`);
+
+  state.workspaceName = newName;
+  setActiveWorkspaceName(newName);
+  exitWorkspaceRenameMode();
+  renderWorkspaceSelect();
+  setStatus(`Renamed workspace to "${newName}".`);
 }
 
 // Reads the toggle at call time (not persisted) — the checkbox's checked
@@ -191,22 +343,43 @@ function resetTheme() {
   setStatus('Reset theme.js to the default placeholder.');
 }
 
+function nodeNameSpan(name) {
+  const span = document.createElement('span');
+  span.className = 'node-name';
+  span.textContent = name;
+  return span;
+}
+
 function render() {
+  el.themeList.innerHTML = '';
   el.fileList.innerHTML = '';
 
   const themeLi = document.createElement('li');
-  themeLi.textContent = THEME_NAME;
   themeLi.dataset.name = THEME_NAME;
-  themeLi.classList.toggle('active', state.active === THEME_NAME);
+  const themeActive = state.active === THEME_NAME;
+  themeLi.classList.toggle('active', themeActive);
+  themeLi.classList.toggle('has-actions', themeActive);
   themeLi.classList.toggle('placeholder', isThemePlaceholder(state.theme.content));
+  if (themeActive) {
+    themeLi.appendChild(el.nodeActions);
+  } else {
+    themeLi.appendChild(nodeNameSpan(THEME_NAME));
+  }
   themeLi.addEventListener('click', () => selectFile(THEME_NAME));
-  el.fileList.appendChild(themeLi);
+  el.themeList.appendChild(themeLi);
 
   for (const name of sortedSlideNames()) {
     const li = document.createElement('li');
-    li.textContent = name;
     li.dataset.name = name;
-    li.classList.toggle('active', state.active === name);
+    li.className = 'slide-item';
+    const isActive = state.active === name;
+    li.classList.toggle('active', isActive);
+    li.classList.toggle('has-actions', isActive);
+    if (isActive) {
+      li.appendChild(el.nodeActions);
+    } else {
+      li.appendChild(nodeNameSpan(name));
+    }
     li.addEventListener('click', () => selectFile(name));
     el.fileList.appendChild(li);
   }
@@ -220,7 +393,10 @@ function render() {
   const isTheme = state.active === THEME_NAME;
   el.discardBtn.style.display = isTheme ? 'none' : '';
   el.resetBtn.style.display = isTheme ? '' : 'none';
+  el.moveBtn.style.display = isTheme ? 'none' : '';
+  el.copyBtn.style.display = isTheme ? 'none' : '';
   el.filenameGroup.classList.toggle('renamable', !isTheme);
+  el.nodeActionsButtons.style.display = renaming ? 'none' : '';
   if (!renaming) {
     el.activeFilename.style.display = '';
     el.renameInput.style.display = 'none';
@@ -261,8 +437,52 @@ function addOrReplaceFile(name, content) {
   return true;
 }
 
+// Imports a dropped/selected .zip: the archive's filename (minus .zip) names
+// the target workspace. No matching workspace -> create it directly. A
+// matching workspace -> confirm before merging (replace/add files) into it.
+// Either way, the resulting workspace becomes active.
+async function importZipFile(file) {
+  const targetName = file.name.replace(/\.zip$/i, '');
+  let files;
+  try {
+    files = await readWorkspaceZip(file);
+  } catch (err) {
+    setStatus(`Import failed — could not read "${file.name}": ${err.message}`, true);
+    return;
+  }
+
+  if (!workspaceExists(targetName)) {
+    writeWorkspace(targetName, files);
+    setActiveWorkspaceName(targetName);
+    applyWorkspace(targetName, files);
+    renderWorkspaceSelect();
+    render();
+    setStatus(`Imported "${targetName}".`);
+    return;
+  }
+
+  const existing = readWorkspace(targetName) || {};
+  if (window.confirm(`"${targetName}" already exists. Merge the imported files into it?`)) {
+    const merged = { ...existing, ...files };
+    writeWorkspace(targetName, merged);
+    setActiveWorkspaceName(targetName);
+    applyWorkspace(targetName, merged);
+    setStatus(`Merged import into "${targetName}".`);
+  } else {
+    setActiveWorkspaceName(targetName);
+    applyWorkspace(targetName, existing);
+    setStatus(`Switched to "${targetName}" — import cancelled.`);
+  }
+  renderWorkspaceSelect();
+  render();
+}
+
 async function handleFiles(fileList) {
   for (const file of fileList) {
+    if (/\.zip$/i.test(file.name)) {
+      await importZipFile(file);
+      continue;
+    }
     const text = await file.text();
     addOrReplaceFile(file.name, text);
   }
@@ -271,6 +491,19 @@ async function handleFiles(fileList) {
 function sanitizeOutputName(raw) {
   const cleaned = (raw || '').trim().replace(/[\\/:*?"<>|]+/g, '-').replace(/^\.+/, '');
   return cleaned || 'deck';
+}
+
+function timestampSuffix() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
+// Forge/export output base name derives from the active workspace's
+// (sanitized) name; the timestamp toggle appends a suffix on top of it.
+function outputBaseName() {
+  const base = sanitizeOutputName(state.workspaceName);
+  return el.timestampToggle.checked ? `${base} ${timestampSuffix()}` : base;
 }
 
 function triggerDownload(blob, filename) {
@@ -291,6 +524,21 @@ function downloadActiveFile() {
   const blob = new Blob([entry.content], { type: 'text/javascript' });
   triggerDownload(blob, entry.name);
   setStatus(`Downloaded ${entry.name}`);
+}
+
+async function exportWorkspace() {
+  const entry = getActiveEntry();
+  if (entry) entry.content = el.editor.value;
+  try {
+    const blob = await exportWorkspaceZip({
+      theme: state.theme,
+      slides: sortedSlideNames().map((name) => state.slides.get(name)),
+    });
+    triggerDownload(blob, `${sanitizeOutputName(state.workspaceName)}.zip`);
+    setStatus(`Exported ${state.workspaceName}.zip`);
+  } catch (err) {
+    setStatus(`Export failed: ${err.message}`, true);
+  }
 }
 
 function discardActiveFile() {
@@ -314,6 +562,7 @@ function startRename() {
   el.renameInput.value = basenameOf(state.active);
   el.activeFilename.style.display = 'none';
   el.renameBtn.style.display = 'none';
+  el.nodeActionsButtons.style.display = 'none';
   el.renameInput.style.display = 'inline-block';
   el.renameExt.style.display = 'inline';
   el.renameInput.focus();
@@ -386,7 +635,7 @@ async function forge() {
     return;
   }
 
-  const outputName = sanitizeOutputName(el.outputFilename.value);
+  const outputName = outputBaseName();
   el.forgeBtn.disabled = true;
   setStatus('Forging…');
   try {
@@ -419,6 +668,92 @@ function addBlankSlide() {
   persistWorkspace();
 }
 
+// --- Slide move/copy between workspaces ---
+
+function otherWorkspaceNames() {
+  return listWorkspaceNames().filter((name) => name !== state.workspaceName);
+}
+
+function workspaceHasFile(name, fileName) {
+  const snapshot = readWorkspace(name);
+  return Boolean(snapshot && Object.prototype.hasOwnProperty.call(snapshot, fileName));
+}
+
+function openTransferPicker(mode) {
+  if (state.active === THEME_NAME) return;
+  transferMode = mode;
+  transferSlideName = state.active;
+  el.transferOverlayTitle.textContent = mode === 'move'
+    ? `Move "${transferSlideName}" to…`
+    : `Copy "${transferSlideName}" to…`;
+  el.transferTargetList.innerHTML = '';
+
+  const targets = otherWorkspaceNames();
+  if (targets.length === 0) {
+    const li = document.createElement('li');
+    li.className = 'disabled';
+    li.textContent = 'No other workspaces exist yet.';
+    el.transferTargetList.appendChild(li);
+  }
+  for (const name of targets) {
+    const li = document.createElement('li');
+    li.textContent = name;
+    if (workspaceHasFile(name, transferSlideName)) {
+      li.classList.add('disabled');
+      const reason = document.createElement('span');
+      reason.className = 'reason';
+      reason.textContent = `already has ${transferSlideName}`;
+      li.appendChild(reason);
+    } else {
+      li.addEventListener('click', () => performTransfer(name));
+    }
+    el.transferTargetList.appendChild(li);
+  }
+
+  el.transferOverlay.classList.add('visible');
+}
+
+function closeTransferPicker() {
+  el.transferOverlay.classList.remove('visible');
+  transferMode = null;
+  transferSlideName = null;
+}
+
+function performTransfer(targetName) {
+  const mode = transferMode;
+  const name = transferSlideName;
+  const entry = state.slides.get(name);
+  if (!entry) {
+    closeTransferPicker();
+    return;
+  }
+  if (state.active === name) entry.content = el.editor.value;
+
+  const targetSnapshot = readWorkspace(targetName) || {};
+  if (Object.prototype.hasOwnProperty.call(targetSnapshot, name)) {
+    // Shouldn't happen (the picker pre-filters collisions), but don't clobber.
+    setStatus(`${mode === 'move' ? 'Move' : 'Copy'} failed — "${name}" already exists in "${targetName}".`, true);
+    closeTransferPicker();
+    return;
+  }
+  targetSnapshot[name] = entry.content;
+  writeWorkspace(targetName, targetSnapshot);
+
+  if (mode === 'move') {
+    state.slides.delete(name);
+    state.active = THEME_NAME;
+    persistWorkspace();
+    setActiveWorkspaceName(targetName);
+    applyWorkspace(targetName, targetSnapshot);
+    renderWorkspaceSelect();
+    render();
+    setStatus(`Moved "${name}" to "${targetName}".`);
+  } else {
+    setStatus(`Copied "${name}" to "${targetName}".`);
+  }
+  closeTransferPicker();
+}
+
 el.editor.addEventListener('input', () => {
   const entry = getActiveEntry();
   if (!entry) return;
@@ -431,9 +766,7 @@ el.editor.addEventListener('input', () => {
 });
 
 el.addSlideBtn.addEventListener('click', addBlankSlide);
-el.newProjectBtn.addEventListener('click', newProject);
 el.resetBtn.addEventListener('click', resetTheme);
-el.outputFilename.addEventListener('change', handleOutputNameChange);
 el.loadFilesBtn.addEventListener('click', () => el.fileInput.click());
 el.fileInput.addEventListener('change', async (e) => {
   await handleFiles(e.target.files);
@@ -442,6 +775,9 @@ el.fileInput.addEventListener('change', async (e) => {
 el.downloadBtn.addEventListener('click', downloadActiveFile);
 el.discardBtn.addEventListener('click', discardActiveFile);
 el.filenameGroup.addEventListener('click', startRename);
+// node-actions is reparented into the active tree row on every render(); its
+// clicks must not bubble to that row's own click->selectFile listener.
+el.nodeActions.addEventListener('click', (e) => e.stopPropagation());
 el.renameInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
     e.preventDefault();
@@ -460,6 +796,33 @@ el.aiBtn.addEventListener('click', copyAiReference);
 el.aiOverlayClose.addEventListener('click', () => el.aiOverlay.classList.remove('visible'));
 el.aiOverlay.addEventListener('click', (e) => {
   if (e.target === el.aiOverlay) el.aiOverlay.classList.remove('visible');
+});
+
+el.workspaceSelect.addEventListener('change', () => switchWorkspace(el.workspaceSelect.value));
+el.workspaceNewBtn.addEventListener('click', createWorkspace);
+el.workspaceDeleteBtn.addEventListener('click', deleteActiveWorkspace);
+el.workspaceExportBtn.addEventListener('click', exportWorkspace);
+el.workspaceImportBtn.addEventListener('click', () => el.fileInput.click());
+el.workspaceRenameBtn.addEventListener('click', startWorkspaceRename);
+el.workspaceRenameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    commitWorkspaceRename(true);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    cancelWorkspaceRename();
+  }
+});
+el.workspaceRenameInput.addEventListener('blur', () => commitWorkspaceRename(false));
+el.workspaceRenameInput.addEventListener('input', () => {
+  if (el.statusBar.classList.contains('error')) setStatus('');
+});
+
+el.moveBtn.addEventListener('click', () => openTransferPicker('move'));
+el.copyBtn.addEventListener('click', () => openTransferPicker('copy'));
+el.transferOverlayClose.addEventListener('click', closeTransferPicker);
+el.transferOverlay.addEventListener('click', (e) => {
+  if (e.target === el.transferOverlay) closeTransferPicker();
 });
 
 let dragDepth = 0;
@@ -482,5 +845,6 @@ window.addEventListener('drop', async (e) => {
   }
 });
 
-restoreActiveWorkspace();
+restoreOrCreateActiveWorkspace();
+renderWorkspaceSelect();
 render();

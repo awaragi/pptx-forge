@@ -4,306 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>pptx-forge — browser</title>
-<style>
-  :root {
-    color-scheme: dark;
-    --bg-0: #1e1e1e;
-    --bg-1: #252526;
-    --bg-2: #2d2d2d;
-    --border: #3c3c3c;
-    --text: #d4d4d4;
-    --text-dim: #6a6a6a;
-    --accent: #569cd6;
-    --accent-fg: #ffffff;
-    --danger: #f14c4c;
-    --danger-bg: #3a2020;
-  }
-  @media (prefers-color-scheme: light) {
-    :root {
-      color-scheme: light;
-      --bg-0: #ffffff;
-      --bg-1: #f3f3f3;
-      --bg-2: #e8e8e8;
-      --border: #d4d4d4;
-      --text: #1e1e1e;
-      --text-dim: #6e6e6e;
-      --accent: #005fb8;
-      --accent-fg: #ffffff;
-      --danger: #a1260d;
-      --danger-bg: #fbe9e7;
-    }
-  }
-  * { box-sizing: border-box; }
-  html, body {
-    height: 100%;
-    margin: 0;
-    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-    background: var(--bg-0);
-    color: var(--text);
-  }
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-  }
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 8px 12px;
-    background: var(--bg-1);
-    border-bottom: 1px solid var(--border);
-    flex: 0 0 auto;
-  }
-  .topbar .brand {
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-  .topbar .spacer { flex: 1; }
-  .ai-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg-0);
-  }
-  .ai-components-toggle {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--text-dim);
-    cursor: pointer;
-    user-select: none;
-  }
-  .output-name {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  .output-name input {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 3px;
-    padding: 4px 6px;
-    font-size: 13px;
-    width: 140px;
-  }
-  button {
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    border-radius: 3px;
-    padding: 6px 12px;
-    font-size: 13px;
-    cursor: pointer;
-  }
-  button:hover { background: #383838; }
-  button:disabled { opacity: 0.5; cursor: default; }
-  #forge-btn {
-    background: var(--accent);
-    color: var(--accent-fg);
-    border-color: var(--accent);
-    font-weight: 600;
-  }
-  #forge-btn:hover { background: #4a8fc2; }
-  .workspace {
-    flex: 1 1 auto;
-    display: flex;
-    min-height: 0;
-  }
-  .sidebar {
-    flex: 0 0 220px;
-    background: var(--bg-1);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-  }
-  .sidebar-header {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-dim);
-    padding: 10px 12px 6px;
-  }
-  #file-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    flex: 1 1 auto;
-  }
-  #file-list li {
-    padding: 6px 12px;
-    font-size: 13px;
-    cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    border-left: 2px solid transparent;
-  }
-  #file-list li:hover { background: var(--bg-2); }
-  #file-list li.active {
-    background: var(--bg-2);
-    border-left-color: var(--accent);
-  }
-  #file-list li.placeholder { color: var(--text-dim); font-style: italic; }
-  .sidebar-footer {
-    padding: 8px;
-    border-top: 1px solid var(--border);
-  }
-  .sidebar-footer { display: flex; flex-direction: column; gap: 6px; }
-  .sidebar-footer button { width: 100%; }
-  .editor-pane {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-  .editor-toolbar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    background: var(--bg-1);
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
-  }
-  #active-filename { color: var(--text-dim); }
-  .editor-toolbar .spacer { flex: 1; }
-  .filename-group {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 4px;
-    border-radius: 3px;
-  }
-  .filename-group.renamable { cursor: pointer; }
-  .filename-group.renamable:hover { background: var(--bg-2); }
-  .filename-group.renamable:hover #active-filename { color: var(--text); text-decoration: underline; }
-  .rename-input {
-    display: none;
-    background: var(--bg-2);
-    border: 1px solid var(--accent);
-    color: var(--text);
-    border-radius: 3px;
-    padding: 2px 4px;
-    font-size: 13px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    width: 150px;
-  }
-  .rename-input:focus { outline: none; }
-  .rename-ext {
-    display: none;
-    color: var(--text-dim);
-    font-size: 13px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  }
-  .icon-btn {
-    width: 30px;
-    padding: 4px 0;
-    font-size: 14px;
-    text-align: center;
-  }
-  .icon-btn.inline-rename {
-    width: 20px;
-    padding: 0;
-    font-size: 12px;
-    border: none;
-    background: transparent;
-  }
-  .filename-group.renamable:hover .icon-btn.inline-rename { color: var(--accent); }
-  #discard-btn:hover { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
-  #editor {
-    flex: 1 1 auto;
-    width: 100%;
-    resize: none;
-    border: none;
-    outline: none;
-    background: var(--bg-0);
-    color: var(--text);
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    padding: 12px;
-    tab-size: 2;
-  }
-  .drop-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(86, 156, 214, 0.15);
-    border: 3px dashed var(--accent);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    color: var(--accent-fg);
-    z-index: 10;
-    pointer-events: none;
-  }
-  .drop-overlay.visible { display: flex; }
-  .ai-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-  }
-  .ai-overlay.visible { display: flex; }
-  .ai-panel {
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    width: min(700px, 90vw);
-    height: min(500px, 80vh);
-    display: flex;
-    flex-direction: column;
-    padding: 12px;
-    gap: 8px;
-  }
-  .ai-panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-  #ai-reference-textarea {
-    flex: 1 1 auto;
-    resize: none;
-    background: var(--bg-0);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
-    line-height: 1.5;
-  }
-  #status-bar {
-    flex: 0 0 auto;
-    min-height: 28px;
-    padding: 4px 12px;
-    font-size: 12px;
-    background: var(--bg-1);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-  }
-  #status-bar.error { background: var(--danger-bg); color: var(--danger); }
-</style>
+<style>/*__APP_STYLES__*/</style>
 </head>
 <body>
   <div id="app">
     <header class="topbar">
       <div class="brand">pptx-forge</div>
+      <div class="workspace-group" title="Workspace">
+        <select id="workspace-select"></select>
+        <input id="workspace-rename-input" class="workspace-rename-input" type="text" spellcheck="false" autocomplete="off">
+        <button id="workspace-rename-btn" class="icon-btn" title="Rename workspace" aria-label="Rename workspace">✎</button>
+        <button id="workspace-new-btn" class="icon-btn icon-btn-spaced" title="New workspace" aria-label="New workspace">
+          <span class="icon icon-plus"></span>
+        </button>
+        <button id="workspace-import-btn" class="icon-btn" title="Import workspace from zip" aria-label="Import workspace">
+          <span class="icon icon-arrow-down-tray"></span>
+        </button>
+        <button id="workspace-export-btn" class="icon-btn" title="Export workspace as zip" aria-label="Export workspace">
+          <span class="icon icon-arrow-up-tray"></span>
+        </button>
+        <button id="workspace-delete-btn" class="icon-btn" title="Delete workspace" aria-label="Delete workspace">🗑</button>
+      </div>
       <div class="spacer"></div>
       <div class="ai-group">
         <button id="ai-btn" title="Copy AI reference">✨ AI</button>
@@ -312,43 +33,62 @@
           Include builtin components
         </label>
       </div>
-      <label class="output-name">
-        output:
-        <input id="output-filename" value="deck" spellcheck="false">
-        <span>.pptx</span>
-      </label>
-      <button id="forge-btn">⚡ Forge</button>
+      <div class="forge-group">
+        <label class="timestamp-toggle" title="Append a timestamp to the forge output filename">
+          <input type="checkbox" id="timestamp-toggle">
+          Timestamp
+        </label>
+        <button id="forge-btn">⚡ Forge</button>
+      </div>
     </header>
     <div class="workspace">
       <aside class="sidebar">
         <div class="sidebar-header">Explorer</div>
-        <ul id="file-list"></ul>
-        <div class="sidebar-footer">
-          <button id="add-slide-btn">New slide</button>
-          <button id="load-files-btn">Load files…</button>
-          <button id="new-project-btn">New project</button>
-          <input id="file-input" type="file" accept=".js" multiple hidden>
-        </div>
-      </aside>
-      <main class="editor-pane">
-        <div class="editor-toolbar">
+        <span id="node-actions" class="node-actions">
           <span id="filename-group" class="filename-group" title="Click to rename">
             <span id="active-filename"></span>
             <input id="rename-input" class="rename-input" type="text" spellcheck="false" autocomplete="off">
             <span id="rename-ext" class="rename-ext">.js</span>
             <button id="rename-btn" class="icon-btn inline-rename" title="Rename" aria-label="Rename">✎</button>
           </span>
-          <span class="spacer"></span>
-          <button id="discard-btn" class="icon-btn" title="Discard" aria-label="Discard">🗑</button>
-          <button id="reset-btn" class="icon-btn" title="Reset to default" aria-label="Reset to default">↺</button>
-          <button id="download-btn" class="icon-btn" title="Download" aria-label="Download">⬇</button>
+          <span id="node-actions-buttons" class="node-actions-buttons">
+            <button id="move-btn" class="icon-btn" title="Move to workspace…" aria-label="Move to workspace">
+              <span class="icon icon-scissors"></span>
+            </button>
+            <button id="copy-btn" class="icon-btn" title="Copy to workspace…" aria-label="Copy to workspace">
+              <span class="icon icon-copy"></span>
+            </button>
+            <button id="discard-btn" class="icon-btn" title="Discard" aria-label="Discard">🗑</button>
+            <button id="reset-btn" class="icon-btn icon-btn-lg" title="Reset to default" aria-label="Reset to default">
+              <span class="icon icon-rotate-ccw"></span>
+            </button>
+            <button id="download-btn" class="icon-btn" title="Download" aria-label="Download">
+              <span class="icon icon-arrow-up-tray"></span>
+            </button>
+          </span>
+        </span>
+        <ul id="theme-list" class="file-tree"></ul>
+        <div class="tree-group-header">
+          <span class="tree-group-label">Slides</span>
+          <span class="node-actions-buttons">
+            <button id="add-slide-btn" class="icon-btn" title="New slide" aria-label="New slide">
+              <span class="icon icon-plus"></span>
+            </button>
+            <button id="load-files-btn" class="icon-btn" title="Load slides" aria-label="Load slides">
+              <span class="icon icon-arrow-down-tray"></span>
+            </button>
+          </span>
         </div>
+        <ul id="file-list" class="file-tree"></ul>
+        <input id="file-input" type="file" accept=".js,.zip" multiple hidden>
+      </aside>
+      <main class="editor-pane">
         <textarea id="editor" spellcheck="false"></textarea>
       </main>
     </div>
     <div id="status-bar"></div>
   </div>
-  <div class="drop-overlay" id="drop-overlay">Drop .js files to load them</div>
+  <div class="drop-overlay" id="drop-overlay">Drop .js files or a .zip workspace to load them</div>
   <div class="ai-overlay" id="ai-overlay">
     <div class="ai-panel">
       <div class="ai-panel-header">
@@ -356,6 +96,15 @@
         <button id="ai-overlay-close" class="icon-btn" title="Close" aria-label="Close">✕</button>
       </div>
       <textarea id="ai-reference-textarea" readonly spellcheck="false"></textarea>
+    </div>
+  </div>
+  <div class="ai-overlay" id="transfer-overlay">
+    <div class="ai-panel transfer-panel">
+      <div class="ai-panel-header">
+        <span id="transfer-overlay-title">Move slide to…</span>
+        <button id="transfer-overlay-close" class="icon-btn" title="Close" aria-label="Close">✕</button>
+      </div>
+      <ul id="transfer-target-list" class="transfer-target-list"></ul>
     </div>
   </div>
   <script>/*__APP_BUNDLE__*/</script>

@@ -202,12 +202,10 @@ If you create something reusable and well-tested, sharing it back with the forge
 
 Planned features and improvements:
 
-- **Project export** — Download complete projects (theme.js + all slide files) as a zip archive
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
 - **Version display in browser tool** — Show the version number in `pptx-forge.html` UI so users can easily identify which version they're running
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
-- **Local storage workspaces** — Support multiple workspaces persisted in browser local storage instead of session, allowing users to resume work across browser sessions
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
 - **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
-
+- **Workspace import validation** - validate that the zip workspace import has the correct files (theme.js, slides/*.js) and structure, and provide user feedback if not
