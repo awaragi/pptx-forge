@@ -1,6 +1,6 @@
 {
   "name": "pptx-forge",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "type": "module",
   "scripts": {
     "forge": "node bin/forge.js",
@@ -10,6 +10,10 @@
     "create": "node bin/create.js",
     "build:browser": "node scripts/build-browser.js",
     "test": "node --test test/*.test.js",
+    "pretest:e2e": "npm run build:browser",
+    "test:e2e": "playwright test",
+    "pretest:e2e:demo": "npm run build:browser",
+    "test:e2e:demo": "SLOWMO_MS=${SLOWMO_MS:-1250} playwright test --headed --workers=1",
     "release:prepare": "node scripts/version.js",
     "release": "node scripts/publish.js"
   },
@@ -31,6 +35,7 @@
     "pptxgenjs": "^3.12.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "esbuild": "^0.28.1"
   }
 }
