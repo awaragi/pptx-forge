@@ -5,6 +5,7 @@ import { state, isPinnedName, isPinnedPlaceholder, sortedSlideNames, getActiveEn
 import { el } from './elements.js';
 import { createInlineRename } from './inline-rename.js';
 import { notifySuccess } from './notifications.js';
+import { updatePreviewNow } from './preview.js';
 
 function nodeNameSpan(name) {
   const span = document.createElement('span');
@@ -76,6 +77,7 @@ export function selectFile(name) {
   const entry = getActiveEntry();
   el.editor.value = entry ? entry.content : '';
   render();
+  updatePreviewNow();
 }
 
 function basenameOf(name) {

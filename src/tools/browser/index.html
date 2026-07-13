@@ -84,7 +84,27 @@
         <input id="file-input" type="file" accept=".js,.zip" multiple hidden>
       </aside>
       <main class="editor-pane">
-        <textarea id="editor" spellcheck="false"></textarea>
+        <div class="editor-top" id="editor-top">
+          <textarea id="editor" spellcheck="false"></textarea>
+        </div>
+        <div class="pane-resizer" id="pane-resizer" title="Drag to resize the preview"></div>
+        <div class="preview-pane" id="preview-pane">
+          <div class="preview-toolbar">
+            <span class="preview-label">Preview</span>
+            <span id="preview-status" class="preview-status"></span>
+            <span class="spacer"></span>
+            <button id="preview-copy-btn" class="icon-btn" title="Copy preview as PNG" aria-label="Copy preview as PNG">
+              <span class="icon icon-copy"></span>
+            </button>
+            <button id="preview-download-btn" class="icon-btn" title="Download preview as PNG" aria-label="Download preview as PNG">
+              <span class="icon icon-arrow-up-tray"></span>
+            </button>
+            <button id="preview-collapse-btn" class="icon-btn" title="Collapse preview" aria-label="Collapse preview">▾</button>
+          </div>
+          <div class="preview-canvas-wrap">
+            <canvas id="preview-canvas"></canvas>
+          </div>
+        </div>
       </main>
     </div>
   </div>

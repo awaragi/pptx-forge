@@ -104,6 +104,8 @@ Open the generated `pptx-forge.html` in a browser and:
 2. Click a file in the sidebar to edit it. Dropping a file with a name that already exists replaces its content in place.
 3. Click the filename above the editor (or its pencil icon) to rename it in place — edit the name directly (the `.js` extension is fixed and shown separately, not editable), Enter to confirm or Escape to cancel. Use the toolbar's Discard/Download icons to remove or download the file, or click "⚡ Forge" to compile everything currently loaded into a downloadable `.pptx`. Rename and Discard aren't available for `theme.js`.
 
+A live preview pane sits below the editor, rendering the slide file you're currently editing — it recompiles and re-renders automatically a moment after you stop typing, with no manual refresh needed. While `theme.js` or `masters.js` is open instead of a slide, it keeps showing whichever slide you last viewed, updated live with your in-progress theme/master edits. Drag the divider above it to resize, or use the toolbar's collapse button to hide it entirely — both the size and collapsed state are remembered across reloads. The toolbar also has buttons to copy the current preview to the clipboard as a PNG or download it as one.
+
 Only `.js` files are accepted, and Forge requires at least one slide file besides `theme.js`. This tool has no special sandboxing around the code it runs — it's meant for the same trusted, local use case as the CLI, just without requiring Node.
 
 Import/export workspace zips follow a strict layout: `theme.js` at the root, slide files under `slides/`. Import requires `theme.js` at the root or it fails with an error; any other entries in the zip (stray files, `.js` files outside `slides/`, nested folders) are silently ignored.
@@ -207,6 +209,5 @@ Planned features and improvements:
 - **Syntax highlighting** — Add JavaScript syntax coloring to the code editor for better readability
 - **Version compatibility** — `theme.js` and slide `.js` files should export a version number that must match the library version; mismatch causes runtime errors or bad output
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
-- **Image export** — In the pptx-forge HTML tool, generate PNG or JPEG instead of PPTX by mocking pptx-genxjs and generating output as an image.
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
 - **Responsive design** — Improve layout adaptability for different screen sizes and resolutions

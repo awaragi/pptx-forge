@@ -4,6 +4,9 @@
 const WORKSPACES_KEY = 'pptx-forge.workspaces';
 const ACTIVE_KEY = 'pptx-forge.activeWorkspace';
 const HELP_SEEN_KEY = 'pptx-forge.helpSeen';
+const PREVIEW_VISIBLE_KEY = 'pptx-forge.preview.visible';
+const PREVIEW_HEIGHT_KEY = 'pptx-forge.preview.height';
+const DEFAULT_PREVIEW_HEIGHT_PCT = 50;
 
 // Conservative assumption: several browsers cap localStorage around 5MB/origin.
 // Warn well before a write is likely to actually fail.
@@ -94,6 +97,43 @@ export function hasSeenHelp() {
 export function markHelpSeen() {
   try {
     localStorage.setItem(HELP_SEEN_KEY, '1');
+  } catch {
+    handleFailure();
+  }
+}
+
+// UI preferences below are global (not keyed by workspace), same tier as
+// HELP_SEEN_KEY — they describe how the editor looks, not workspace content.
+export function getPreviewVisible() {
+  try {
+    const raw = localStorage.getItem(PREVIEW_VISIBLE_KEY);
+    return raw === null ? true : raw === '1';
+  } catch {
+    return true;
+  }
+}
+
+export function setPreviewVisible(visible) {
+  try {
+    localStorage.setItem(PREVIEW_VISIBLE_KEY, visible ? '1' : '0');
+  } catch {
+    handleFailure();
+  }
+}
+
+export function getPreviewHeightPct() {
+  try {
+    const raw = localStorage.getItem(PREVIEW_HEIGHT_KEY);
+    const n = raw === null ? NaN : Number(raw);
+    return Number.isFinite(n) ? n : DEFAULT_PREVIEW_HEIGHT_PCT;
+  } catch {
+    return DEFAULT_PREVIEW_HEIGHT_PCT;
+  }
+}
+
+export function setPreviewHeightPct(pct) {
+  try {
+    localStorage.setItem(PREVIEW_HEIGHT_KEY, String(pct));
   } catch {
     handleFailure();
   }

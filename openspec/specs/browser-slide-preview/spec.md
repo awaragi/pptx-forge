@@ -1,5 +1,9 @@
-## ADDED Requirements
+# browser-slide-preview Specification
 
+## Purpose
+Give the browser tool (`pptx-forge.html`) a fast feedback loop for slide authoring: a live preview pane under the editor that shows the slide currently being worked on, recompiled and re-rendered automatically as it's edited, without a manual "⚡ Forge" → download → open-in-PowerPoint round trip. Reuses the exact `compileDeck` pipeline the CLI and "⚡ Forge" already rely on, rendering the resulting `.pptx` bytes with the `pptxviewjs` canvas renderer — no separate rendering logic, no approximation of PowerPoint's own output.
+
+## Requirements
 ### Requirement: Live preview pane under the editor
 The system SHALL show a preview pane in the bottom half of the editor pane, rendering the currently active slide file by compiling it (together with the active workspace's `theme.js` and `masters.js`) through the same `compileDeck` pipeline used by "⚡ Forge", and rendering the resulting `.pptx` bytes onto a canvas.
 
@@ -65,6 +69,17 @@ The system SHALL provide a draggable divider between the editor and the preview 
 #### Scenario: Dragging cannot shrink either pane below a usable minimum
 - **WHEN** the user drags the divider toward either extreme (attempting to shrink the editor or the preview pane to near-zero)
 - **THEN** the resize is clamped so neither pane shrinks below a usable minimum size
+
+### Requirement: The rendered preview tracks the pane's actual size, not just the pane's own dimensions
+The system SHALL re-render the preview at its current displayed size whenever that size changes — via divider drag or a browser window resize — rather than continuing to display a render sized for a previous, no-longer-current pane size.
+
+#### Scenario: Dragging the divider changes the rendered preview's size
+- **WHEN** the user drags the divider to make the preview pane taller or shorter
+- **THEN** the rendered preview's visible size changes accordingly, not just the empty space around it
+
+#### Scenario: Resizing the browser window changes the rendered preview's size
+- **WHEN** the user resizes the browser window while a preview is showing
+- **THEN** the preview re-renders to match the pane's new size
 
 ### Requirement: Collapsible preview pane with persisted visibility
 The system SHALL provide a toolbar button that collapses the preview pane to a slim strip (hiding the rendered canvas while leaving the toolbar visible) and expands it again, and SHALL persist the collapsed/expanded state in `localStorage`, restoring it on subsequent loads.

@@ -32,4 +32,12 @@ export const el = {
   loadFilesBtn: document.getElementById('load-files-btn'),
   fileInput: document.getElementById('file-input'),
   dropOverlay: document.getElementById('drop-overlay'),
+  editorTop: document.getElementById('editor-top'),
+  paneResizer: document.getElementById('pane-resizer'),
+  previewPane: document.getElementById('preview-pane'),
+  previewCanvas: document.getElementById('preview-canvas'),
+  previewStatus: document.getElementById('preview-status'),
+  previewCopyBtn: document.getElementById('preview-copy-btn'),
+  previewDownloadBtn: document.getElementById('preview-download-btn'),
+  previewCollapseBtn: document.getElementById('preview-collapse-btn'),
 };

@@ -18,6 +18,7 @@ import { renderWorkspaceSelect, switchWorkspace, createWorkspace, deleteActiveWo
 import { addBlankSlide, resetPinnedFile, handleFiles, downloadActiveFile, discardActiveFile, forge, exportWorkspace } from './slides.js';
 import { isAiReferenceOpen, closeAiReference } from './ai-reference.js';
 import { isTransferOpen, closeTransferPicker } from './transfer.js';
+import { schedulePreviewUpdate, updatePreviewNow } from './preview.js';
 import './dragdrop.js';
 
 // __VERSION__ is injected at build time by scripts/build-browser.js (esbuild `define`).
@@ -71,6 +72,7 @@ el.editor.addEventListener('input', () => {
     render();
   }
   persistWorkspace();
+  schedulePreviewUpdate();
 });
 
 el.addSlideBtn.addEventListener('click', addBlankSlide);
@@ -125,4 +127,5 @@ if (VERSION) el.appVersion.textContent = `v${VERSION}`;
 restoreOrCreateActiveWorkspace();
 renderWorkspaceSelect();
 render();
+updatePreviewNow();
 maybeAutoOpenHelp(isFirstVisit);
