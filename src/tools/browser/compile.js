@@ -5,6 +5,7 @@ import pptxgen from 'pptxgenjs';
 import JSZip from 'jszip';
 import { createLib } from '../../lib/lib.js';
 import { applyMasters } from '../../lib/masters.js';
+import { setupPptx, patchThemeColors } from '../../lib/render.js';
 
 export class CompileError extends Error {
   constructor(fileName, cause) {
@@ -73,10 +74,7 @@ export async function compileDeck({ theme, masters, slides, outputName }) {
   }
 
   const pptx = new pptxgen();
-  pptx.author = outputName;
-  pptx.defineLayout({ name: 'CUSTOM_WIDE', width: 13.333, height: 7.5 });
-  pptx.layout = 'CUSTOM_WIDE';
-  pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial', lang: 'en-US' };
+  setupPptx(pptx, outputName);
 
   try {
     applyMasters(pptx, lib.masterDefinitions);
@@ -99,15 +97,7 @@ export async function compileDeck({ theme, masters, slides, outputName }) {
   }
 
   const arrayBuffer = await pptx.write({ outputType: 'arraybuffer' });
-  const zip = await JSZip.loadAsync(arrayBuffer);
-  let xml = await zip.file('ppt/theme/theme1.xml').async('string');
-  for (const [slot, hex] of Object.entries(lib.theme.scheme)) {
-    xml = xml.replace(
-      new RegExp(`(<a:${slot}>)[\\s\\S]*?(<\\/a:${slot}>)`),
-      `$1<a:srgbClr val="${hex}"/>$2`,
-    );
-  }
-  zip.file('ppt/theme/theme1.xml', xml);
+  const zip = await patchThemeColors(await JSZip.loadAsync(arrayBuffer), lib.theme.scheme);
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 

@@ -1,0 +1,35 @@
+// Shared DOM element refs for the core editor/sidebar/workspace-switcher UI —
+// used by state.js's consumers (view.js, workspace.js, slides.js) and app.js's
+// own wiring. Self-contained overlay features (help, AI reference, transfer
+// picker) query their own elements instead of reaching into this registry.
+export const el = {
+  appVersion: document.getElementById('app-version'),
+  themeList: document.getElementById('theme-list'),
+  fileList: document.getElementById('file-list'),
+  nodeActions: document.getElementById('node-actions'),
+  nodeActionsButtons: document.getElementById('node-actions-buttons'),
+  editor: document.getElementById('editor'),
+  activeFilename: document.getElementById('active-filename'),
+  filenameGroup: document.getElementById('filename-group'),
+  renameInput: document.getElementById('rename-input'),
+  renameExt: document.getElementById('rename-ext'),
+  workspaceSelect: document.getElementById('workspace-select'),
+  workspaceRenameInput: document.getElementById('workspace-rename-input'),
+  workspaceRenameBtn: document.getElementById('workspace-rename-btn'),
+  workspaceImportBtn: document.getElementById('workspace-import-btn'),
+  workspaceExportBtn: document.getElementById('workspace-export-btn'),
+  workspaceDeleteBtn: document.getElementById('workspace-delete-btn'),
+  workspaceNewBtn: document.getElementById('workspace-new-btn'),
+  timestampToggle: document.getElementById('timestamp-toggle'),
+  forgeBtn: document.getElementById('forge-btn'),
+  downloadBtn: document.getElementById('download-btn'),
+  discardBtn: document.getElementById('discard-btn'),
+  resetBtn: document.getElementById('reset-btn'),
+  renameBtn: document.getElementById('rename-btn'),
+  moveBtn: document.getElementById('move-btn'),
+  copyBtn: document.getElementById('copy-btn'),
+  addSlideBtn: document.getElementById('add-slide-btn'),
+  loadFilesBtn: document.getElementById('load-files-btn'),
+  fileInput: document.getElementById('file-input'),
+  dropOverlay: document.getElementById('drop-overlay'),
+};

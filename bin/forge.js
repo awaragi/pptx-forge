@@ -10,6 +10,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import pptxgen from 'pptxgenjs';
 import { createLib } from '../src/lib/lib.js';
 import { applyMasters } from '../src/lib/masters.js';
+import { setupPptx, patchThemeColors } from '../src/lib/render.js';
 import open from 'open';
 
 const args = process.argv.slice(2);
@@ -137,10 +138,7 @@ if (slideFiles.length === 0) {
 }
 
 const pptx = new pptxgen();
-pptx.author = workspaceSlug;
-pptx.defineLayout({ name: 'CUSTOM_WIDE', width: 13.333, height: 7.5 });
-pptx.layout = 'CUSTOM_WIDE';
-pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial', lang: 'en-US' };
+setupPptx(pptx, workspaceSlug);
 
 try {
   applyMasters(pptx, lib.masterDefinitions);
@@ -178,15 +176,7 @@ console.log(`\nGenerated: ${outPath}`);
 
 // Patch ppt/theme/theme1.xml with workspace scheme slot hex values
 const raw = await readFile(outPath);
-const zip = await JSZip.loadAsync(raw);
-let xml = await zip.file('ppt/theme/theme1.xml').async('string');
-for (const [slot, hex] of Object.entries(lib.theme.scheme)) {
-  xml = xml.replace(
-    new RegExp(`(<a:${slot}>)[\\s\\S]*?(<\\/a:${slot}>)`),
-    `$1<a:srgbClr val="${hex}"/>$2`,
-  );
-}
-zip.file('ppt/theme/theme1.xml', xml);
+const zip = await patchThemeColors(await JSZip.loadAsync(raw), lib.theme.scheme);
 await writeFile(outPath, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
 console.log('  theme colors patched');
 
