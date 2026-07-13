@@ -14,6 +14,7 @@ import {
   hasAnyWorkspaceData,
 } from './storage.js';
 import { isHelpOpen, closeHelp, nextHelpScreen, prevHelpScreen, maybeAutoOpenHelp } from './help.js';
+import { notifyInfo, notifySuccess, notifyError } from './notifications.js';
 
 const THEME_NAME = 'theme.js';
 const MASTERS_NAME = 'masters.js';
@@ -89,7 +90,6 @@ const el = {
   loadFilesBtn: document.getElementById('load-files-btn'),
   fileInput: document.getElementById('file-input'),
   dropOverlay: document.getElementById('drop-overlay'),
-  statusBar: document.getElementById('status-bar'),
   aiBtn: document.getElementById('ai-btn'),
   aiComponentsToggle: document.getElementById('ai-components-toggle'),
   aiOverlay: document.getElementById('ai-overlay'),
@@ -102,11 +102,11 @@ const el = {
 };
 
 setStorageFailureHandler(() => {
-  setStatus("Persistent storage unavailable — changes won't survive a reload.", true);
+  notifyError("Persistent storage unavailable — changes won't survive a reload.");
 });
 
 setNearingQuotaHandler(() => {
-  setStatus('Storage is getting full — consider deleting unused workspaces.');
+  notifyInfo('Storage is getting full — consider deleting unused workspaces.');
 });
 
 // Fires when another tab writes a change; only applied here if it touches
@@ -118,7 +118,7 @@ setExternalChangeHandler((workspaces) => {
   applyWorkspace(state.workspaceName, snapshot);
   renderWorkspaceSelect();
   render();
-  setStatus('Synced from another tab.');
+  notifyInfo('Synced from another tab.');
 });
 
 function isPinnedName(name) {
@@ -139,11 +139,6 @@ function getActiveEntry() {
   if (state.active === THEME_NAME) return state.theme;
   if (state.active === MASTERS_NAME) return state.masters;
   return state.slides.get(state.active);
-}
-
-function setStatus(message, isError = false) {
-  el.statusBar.textContent = message || '';
-  el.statusBar.classList.toggle('error', Boolean(isError));
 }
 
 function currentWorkspaceSnapshot() {
@@ -221,14 +216,14 @@ function switchWorkspace(name) {
   setActiveWorkspaceName(name);
   renderWorkspaceSelect();
   render();
-  setStatus(`Switched to "${name}".`);
+  notifySuccess(`Switched to "${name}".`);
 }
 
 function createWorkspace() {
   const name = (window.prompt('Name this workspace:') || '').trim();
   if (!name) return;
   if (workspaceExists(name)) {
-    setStatus(`"${name}" already exists — choose a different name.`, true);
+    notifyError(`"${name}" already exists — choose a different name.`);
     return;
   }
   const snapshot = { [THEME_NAME]: THEME_PLACEHOLDER, [MASTERS_NAME]: MASTERS_PLACEHOLDER };
@@ -237,7 +232,7 @@ function createWorkspace() {
   applyWorkspace(name, snapshot);
   renderWorkspaceSelect();
   render();
-  setStatus(`Created workspace "${name}".`);
+  notifySuccess(`Created workspace "${name}".`);
 }
 
 function deleteActiveWorkspace() {
@@ -258,7 +253,7 @@ function deleteActiveWorkspace() {
   }
   renderWorkspaceSelect();
   render();
-  setStatus(`Deleted workspace "${name}".`);
+  notifySuccess(`Deleted workspace "${name}".`);
 }
 
 function startWorkspaceRename() {
@@ -297,9 +292,13 @@ function commitWorkspaceRename(keepEditingOnFailure) {
     return;
   }
 
+  // Only notify on the Enter-key path: on blur, the input already showed
+  // this exact error once (from a prior Enter press) and is now just
+  // silently reverting, per the comment above — re-notifying here would
+  // duplicate the toast every time focus leaves a still-invalid input.
   const fail = (message) => {
-    setStatus(`Rename failed — ${message}`, true);
     if (keepEditingOnFailure) {
+      notifyError(`Rename failed — ${message}`);
       el.workspaceRenameInput.focus();
       el.workspaceRenameInput.select();
     } else {
@@ -314,7 +313,7 @@ function commitWorkspaceRename(keepEditingOnFailure) {
   setActiveWorkspaceName(newName);
   exitWorkspaceRenameMode();
   renderWorkspaceSelect();
-  setStatus(`Renamed workspace to "${newName}".`);
+  notifySuccess(`Renamed workspace to "${newName}".`);
 }
 
 // Reads the toggle at call time (not persisted) — the checkbox's checked
@@ -343,10 +342,10 @@ async function copyAiReference() {
       throw new Error('Clipboard API unavailable');
     }
     await navigator.clipboard.writeText(assembleAiReference());
-    setStatus('Copied AI reference to clipboard.');
+    notifySuccess('Copied AI reference to clipboard.');
   } catch {
     showAiReferenceFallback();
-    setStatus('Clipboard unavailable — select and copy the reference text below.', true);
+    notifyError('Clipboard unavailable — select and copy the reference text below.');
   }
 }
 
@@ -364,7 +363,7 @@ function resetPinnedFile() {
   el.editor.value = getActiveEntry().content;
   persistWorkspace();
   render();
-  setStatus(`Reset ${name} to the default placeholder.`);
+  notifySuccess(`Reset ${name} to the default placeholder.`);
 }
 
 function nodeNameSpan(name) {
@@ -443,7 +442,7 @@ function selectFile(name) {
 // (and reports a status message) for anything not ending in `.js`.
 function addOrReplaceFile(name, content) {
   if (!/\.js$/i.test(name)) {
-    setStatus(`"${name}" was not loaded — only .js files are supported.`, true);
+    notifyError(`"${name}" was not loaded — only .js files are supported.`);
     return false;
   }
 
@@ -475,7 +474,7 @@ async function importZipFile(file) {
   try {
     files = await readWorkspaceZip(file);
   } catch (err) {
-    setStatus(`Import failed — could not read "${file.name}": ${err.message}`, true);
+    notifyError(`Import failed — could not read "${file.name}": ${err.message}`);
     return;
   }
 
@@ -485,7 +484,7 @@ async function importZipFile(file) {
     applyWorkspace(targetName, files);
     renderWorkspaceSelect();
     render();
-    setStatus(`Imported "${targetName}".`);
+    notifySuccess(`Imported "${targetName}".`);
     return;
   }
 
@@ -495,11 +494,11 @@ async function importZipFile(file) {
     writeWorkspace(targetName, merged);
     setActiveWorkspaceName(targetName);
     applyWorkspace(targetName, merged);
-    setStatus(`Merged import into "${targetName}".`);
+    notifySuccess(`Merged import into "${targetName}".`);
   } else {
     setActiveWorkspaceName(targetName);
     applyWorkspace(targetName, existing);
-    setStatus(`Switched to "${targetName}" — import cancelled.`);
+    notifyInfo(`Switched to "${targetName}" — import cancelled.`);
   }
   renderWorkspaceSelect();
   render();
@@ -551,7 +550,7 @@ function downloadActiveFile() {
   entry.content = el.editor.value;
   const blob = new Blob([entry.content], { type: 'text/javascript' });
   triggerDownload(blob, entry.name);
-  setStatus(`Downloaded ${entry.name}`);
+  notifySuccess(`Downloaded ${entry.name}`);
 }
 
 async function exportWorkspace() {
@@ -564,9 +563,9 @@ async function exportWorkspace() {
       slides: sortedSlideNames().map((name) => state.slides.get(name)),
     });
     triggerDownload(blob, `${sanitizeOutputName(state.workspaceName)}.zip`);
-    setStatus(`Exported ${state.workspaceName}.zip`);
+    notifySuccess(`Exported ${state.workspaceName}.zip`);
   } catch (err) {
-    setStatus(`Export failed: ${err.message}`, true);
+    notifyError(`Export failed: ${err.message}`);
   }
 }
 
@@ -578,7 +577,7 @@ function discardActiveFile() {
   state.active = THEME_NAME;
   render();
   persistWorkspace();
-  setStatus(`Discarded ${name}`);
+  notifySuccess(`Discarded ${name}`);
 }
 
 function basenameOf(name) {
@@ -625,9 +624,13 @@ function commitRename(keepEditingOnFailure) {
     return;
   }
 
+  // Only notify on the Enter-key path: on blur, the input already showed
+  // this exact error once (from a prior Enter press) and is now just
+  // silently reverting, per the comment above — re-notifying here would
+  // duplicate the toast every time focus leaves a still-invalid input.
   const fail = (message) => {
-    setStatus(`Rename failed — ${message}`, true);
     if (keepEditingOnFailure) {
+      notifyError(`Rename failed — ${message}`);
       el.renameInput.focus();
       el.renameInput.select();
     } else {
@@ -650,7 +653,7 @@ function commitRename(keepEditingOnFailure) {
   state.active = newName;
   exitRenameMode();
   persistWorkspace();
-  setStatus(`Renamed ${oldName} → ${newName}`);
+  notifySuccess(`Renamed ${oldName} → ${newName}`);
 }
 
 async function forge() {
@@ -660,13 +663,12 @@ async function forge() {
 
   const slideNames = sortedSlideNames();
   if (slideNames.length === 0) {
-    setStatus('Forge needs at least one slide file — add one first.', true);
+    notifyError('Forge needs at least one slide file — add one first.');
     return;
   }
 
   const outputName = outputBaseName();
   el.forgeBtn.disabled = true;
-  setStatus('Forging…');
   try {
     const blob = await compileDeck({
       theme: state.theme,
@@ -675,18 +677,18 @@ async function forge() {
       outputName,
     });
     triggerDownload(blob, `${outputName}.pptx`);
-    setStatus(`Generated ${outputName}.pptx`);
+    notifySuccess(`Generated ${outputName}.pptx`);
   } catch (err) {
     // CompileError.message is already "file.js: <error>[ (file.js:line:col)]" —
     // log the full cause (with stack) to the console for devtools inspection,
-    // and surface the same detail in the status bar so the failure isn't just
+    // and surface the same detail in the toast so the failure isn't just
     // "there's an error somewhere in this file" with no further clue.
     if (err instanceof CompileError) {
       console.error(err.message, err.cause);
-      setStatus(`Failed in ${err.message}`, true);
+      notifyError(`Failed in ${err.message}`);
     } else {
       console.error(err);
-      setStatus(`Forge failed: ${err.message}`, true);
+      notifyError(`Forge failed: ${err.message}`);
     }
   } finally {
     el.forgeBtn.disabled = false;
@@ -768,7 +770,7 @@ function performTransfer(targetName) {
   const targetSnapshot = readWorkspace(targetName) || {};
   if (Object.prototype.hasOwnProperty.call(targetSnapshot, name)) {
     // Shouldn't happen (the picker pre-filters collisions), but don't clobber.
-    setStatus(`${mode === 'move' ? 'Move' : 'Copy'} failed — "${name}" already exists in "${targetName}".`, true);
+    notifyError(`${mode === 'move' ? 'Move' : 'Copy'} failed — "${name}" already exists in "${targetName}".`);
     closeTransferPicker();
     return;
   }
@@ -783,9 +785,9 @@ function performTransfer(targetName) {
     applyWorkspace(targetName, targetSnapshot);
     renderWorkspaceSelect();
     render();
-    setStatus(`Moved "${name}" to "${targetName}".`);
+    notifySuccess(`Moved "${name}" to "${targetName}".`);
   } else {
-    setStatus(`Copied "${name}" to "${targetName}".`);
+    notifySuccess(`Copied "${name}" to "${targetName}".`);
   }
   closeTransferPicker();
 }
@@ -853,9 +855,6 @@ el.renameInput.addEventListener('keydown', (e) => {
   }
 });
 el.renameInput.addEventListener('blur', () => commitRename(false));
-el.renameInput.addEventListener('input', () => {
-  if (el.statusBar.classList.contains('error')) setStatus('');
-});
 el.forgeBtn.addEventListener('click', forge);
 el.aiBtn.addEventListener('click', copyAiReference);
 el.aiOverlayClose.addEventListener('click', () => el.aiOverlay.classList.remove('visible'));
@@ -879,9 +878,6 @@ el.workspaceRenameInput.addEventListener('keydown', (e) => {
   }
 });
 el.workspaceRenameInput.addEventListener('blur', () => commitWorkspaceRename(false));
-el.workspaceRenameInput.addEventListener('input', () => {
-  if (el.statusBar.classList.contains('error')) setStatus('');
-});
 
 el.moveBtn.addEventListener('click', () => openTransferPicker('move'));
 el.copyBtn.addEventListener('click', () => openTransferPicker('copy'));

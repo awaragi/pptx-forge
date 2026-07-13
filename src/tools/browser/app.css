@@ -10,6 +10,8 @@
   --accent-fg: #ffffff;
   --danger: #f14c4c;
   --danger-bg: #3a2020;
+  --success: #4ec9b0;
+  --success-bg: #1f3530;
 }
 @media (prefers-color-scheme: light) {
   :root {
@@ -24,6 +26,8 @@
     --accent-fg: #ffffff;
     --danger: #a1260d;
     --danger-bg: #fbe9e7;
+    --success: #0f7b6c;
+    --success-bg: #e6f4f1;
   }
 }
 * { box-sizing: border-box; }
@@ -517,17 +521,65 @@ button:disabled { opacity: 0.5; cursor: default; }
   font-size: 12px;
   line-height: 1.5;
 }
-#status-bar {
-  flex: 0 0 auto;
-  min-height: 28px;
-  padding: 4px 12px;
-  font-size: 12px;
-  background: var(--bg-1);
-  border-top: 1px solid var(--border);
+.toast-stack {
+  position: fixed;
+  top: 74px; /* clears the topbar (62px) plus a 12px gap */
+  right: 12px;
+  z-index: 1000;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
 }
-#status-bar.error { background: var(--danger-bg); color: var(--danger); }
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 220px;
+  max-width: 360px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  pointer-events: auto;
+  animation: toast-in 0.15s ease-out;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.toast-icon {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+.toast-message {
+  flex: 1 1 auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.toast-close {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.6;
+}
+.toast-close:hover { opacity: 1; }
+.toast-info { border-color: var(--accent); }
+.toast-info .toast-icon { color: var(--accent); }
+.toast-success { border-color: var(--success); background: var(--success-bg); }
+.toast-success .toast-icon { color: var(--success); }
+.toast-error { border-color: var(--danger); background: var(--danger-bg); color: var(--danger); }
+.toast-error .toast-icon { color: var(--danger); }
 
 /* Icon glyphs — feather-style strokes baked into a mask so the icon color
    follows currentColor and matches the rest of the icon-btn theming. */
