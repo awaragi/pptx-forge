@@ -15,6 +15,33 @@ The system SHALL show a preview pane in the bottom half of the editor pane, rend
 - **WHEN** the user edits the content of the currently active slide file in the editor
 - **THEN** the preview pane recompiles and re-renders that slide to reflect the edit, without requiring a manual refresh action
 
+### Requirement: Navigation between multiple slides produced by one file
+A slide file's default export can call `pptx.addSlide()` more than once, so one previewed file can compile to more than one actual slide. The system SHALL let the user step through every slide a file produces: numbered slide buttons in the preview toolbar when there is room for all of them, or a compact previous/next control with a position counter when there is not, plus Left/Right arrow-key navigation while the preview has focus. The system SHALL preserve which sub-slide is being viewed across a recompile of the same file (e.g. an unrelated edit), and reset to the first sub-slide when the previewed file changes. A single-slide file SHALL show no navigation control at all.
+
+#### Scenario: A multi-slide file shows one button per slide
+- **WHEN** the active slide file's default export calls `pptx.addSlide()` three times, and the preview toolbar has room to show all three
+- **THEN** three numbered navigation buttons appear in the toolbar, and clicking one shows that slide
+
+#### Scenario: Too many slides to fit as buttons falls back to compact navigation
+- **WHEN** a file produces more slides than fit as individual numbered buttons in the available toolbar width
+- **THEN** the toolbar instead shows previous/next arrow controls and a "current / total" counter
+
+#### Scenario: Arrow keys navigate between slides
+- **WHEN** the preview canvas has keyboard focus and the user presses the Left or Right arrow key
+- **THEN** the preview shows the previous or next slide from the current file, respectively
+
+#### Scenario: Sub-slide position survives an unrelated edit to the same file
+- **WHEN** the user is viewing the third of five slides from a file, then edits unrelated content earlier in that same file
+- **THEN** the preview continues showing the third slide after recompiling, rather than resetting to the first
+
+#### Scenario: Switching to a different file resets to the first sub-slide
+- **WHEN** the user was viewing a non-first slide of one multi-slide file, then selects a different file, then returns to the original file
+- **THEN** the preview shows that file's first slide again
+
+#### Scenario: A single-slide file shows no navigation control
+- **WHEN** the active slide file's default export calls `pptx.addSlide()` exactly once
+- **THEN** no slide-navigation control (neither numbered buttons nor the compact form) is shown in the toolbar
+
 ### Requirement: Live-typing preview updates are debounced
 The system SHALL debounce recompilation while the user is actively typing in the editor, waiting for a brief pause in input before recompiling and re-rendering the preview, rather than recompiling on every keystroke.
 
@@ -119,11 +146,15 @@ The system SHALL provide a toolbar button that copies the currently rendered pre
 - **THEN** the copy button is hidden or disabled, and clicking elsewhere in the toolbar does not attempt the copy action
 
 ### Requirement: Download preview as PNG
-The system SHALL provide a toolbar button that downloads the currently rendered preview as a PNG file, using the active slide's name as the base of the downloaded filename.
+The system SHALL provide a toolbar button that downloads the currently rendered preview as a PNG file, using the active slide's name as the base of the downloaded filename. When the active file produces more than one slide, the filename SHALL also identify which sub-slide was downloaded.
 
 #### Scenario: Download button saves a PNG file
 - **WHEN** the user clicks the download button with a slide currently rendered in the preview
 - **THEN** a PNG file of the rendered slide is downloaded, named after the active slide file
+
+#### Scenario: Downloading a specific sub-slide of a multi-slide file
+- **WHEN** the active file produces multiple slides and the user is viewing the second one when clicking download
+- **THEN** the downloaded filename identifies both the file and the sub-slide position (e.g. `deck-2.png`)
 
 ### Requirement: Preview rendering makes no network requests
 The system SHALL render the preview entirely from local, already-bundled code and data, making no network requests of any kind, consistent with the browser tool's overall offline, local-only execution guarantee.

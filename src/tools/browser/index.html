@@ -92,6 +92,14 @@
           <div class="preview-toolbar">
             <span class="preview-label">Preview</span>
             <span id="preview-status" class="preview-status"></span>
+            <span id="preview-nav" class="preview-nav">
+              <span id="preview-nav-buttons" class="preview-nav-buttons"></span>
+              <span id="preview-nav-compact" class="preview-nav-compact">
+                <button id="preview-nav-prev" class="icon-btn" title="Previous slide" aria-label="Previous slide">‹</button>
+                <span id="preview-nav-counter" class="preview-nav-counter"></span>
+                <button id="preview-nav-next" class="icon-btn" title="Next slide" aria-label="Next slide">›</button>
+              </span>
+            </span>
             <span class="spacer"></span>
             <button id="preview-copy-btn" class="icon-btn" title="Copy preview as PNG" aria-label="Copy preview as PNG">
               <span class="icon icon-copy"></span>
@@ -101,7 +109,7 @@
             </button>
             <button id="preview-collapse-btn" class="icon-btn" title="Collapse preview" aria-label="Collapse preview">▾</button>
           </div>
-          <div class="preview-canvas-wrap">
+          <div class="preview-canvas-wrap" id="preview-canvas-wrap" tabindex="0">
             <canvas id="preview-canvas"></canvas>
           </div>
         </div>

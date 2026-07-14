@@ -20,7 +20,7 @@ import { el } from './elements.js';
 import { triggerDownload } from './slides.js';
 import { notifySuccess, notifyError } from './notifications.js';
 import { getPreviewVisible, setPreviewVisible, getPreviewHeightPct, setPreviewHeightPct } from './storage.js';
-import { pickPreviewSlideName } from './preview-logic.js';
+import { pickPreviewSlideName, clampSlideIndex, shouldResetSlideIndex } from './preview-logic.js';
 
 const DEBOUNCE_MS = 450;
 const MIN_PANE_PX = 80;
@@ -33,6 +33,15 @@ let viewer = null;
 let lastViewedSlideName = null;
 let collapsed = !getPreviewVisible();
 let heightPct = clampPct(getPreviewHeightPct());
+
+// A slide file can call pptx.addSlide() more than once (the sample showcase
+// deck does this deliberately), so one previewed file can compile to more
+// than one actual slide. currentSlideIndex is preserved across recompiles of
+// the *same* file (so editing slide 1's text while viewing slide 3 doesn't
+// snap back to slide 1) but reset to 0 whenever the previewed file changes.
+let currentSlideIndex = 0;
+let slideCount = 1;
+let lastRenderedName = null;
 
 function clampPct(pct) {
   return Math.min(MAX_HEIGHT_PCT, Math.max(MIN_HEIGHT_PCT, pct));
@@ -100,8 +109,12 @@ export async function updatePreviewNow() {
 
   if (!entry) {
     setStatus(state.slides.size === 0 ? 'No slides in this workspace yet.' : 'Select a slide to preview.');
+    hideNav();
     return;
   }
+
+  if (shouldResetSlideIndex(lastRenderedName, entry.name)) currentSlideIndex = 0;
+  lastRenderedName = entry.name;
 
   setStatus('Rendering…');
   try {
@@ -118,9 +131,13 @@ export async function updatePreviewNow() {
     if (myGeneration !== generation) return;
     await v.loadFile(buffer);
     if (myGeneration !== generation) return;
+
+    slideCount = v.getSlideCount();
+    currentSlideIndex = clampSlideIndex(currentSlideIndex, slideCount);
     clearCanvasInlineSize();
-    await v.render();
+    await v.goToSlide(currentSlideIndex);
     setStatus(entry.name);
+    refreshNav();
   } catch (err) {
     if (myGeneration !== generation) return;
     if (err instanceof CompileError) {
@@ -132,6 +149,84 @@ export async function updatePreviewNow() {
     }
   }
 }
+
+// --- Multi-slide navigation --------------------------------------------------
+
+function goToSlideIndex(index) {
+  if (!viewer) return;
+  const clamped = clampSlideIndex(index, slideCount);
+  if (clamped === currentSlideIndex) return;
+  currentSlideIndex = clamped;
+  clearCanvasInlineSize();
+  viewer.goToSlide(currentSlideIndex);
+  updateNavHighlight();
+}
+
+function renderNavButtons() {
+  el.previewNavButtons.innerHTML = '';
+  for (let i = 0; i < slideCount; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = String(i + 1);
+    btn.title = `Slide ${i + 1}`;
+    btn.addEventListener('click', () => goToSlideIndex(i));
+    el.previewNavButtons.appendChild(btn);
+  }
+}
+
+function updateNavHighlight() {
+  const buttons = el.previewNavButtons.children;
+  for (let i = 0; i < buttons.length; i++) {
+    buttons[i].classList.toggle('active', i === currentSlideIndex);
+  }
+  el.previewNavCounter.textContent = `${currentSlideIndex + 1} / ${slideCount}`;
+  el.previewNavPrev.disabled = currentSlideIndex === 0;
+  el.previewNavNext.disabled = currentSlideIndex === slideCount - 1;
+}
+
+// Tries the numbered-buttons layout first, then measures whether it actually
+// fit in the space the toolbar's flex layout gave it; falls back to the
+// compact arrows+counter form if not. Re-run whenever slideCount or the
+// toolbar's available width could have changed.
+function updateNavFit() {
+  if (slideCount <= 1) {
+    el.previewNavButtons.style.display = 'none';
+    el.previewNavCompact.style.display = 'none';
+    return;
+  }
+  el.previewNavButtons.style.display = 'flex';
+  el.previewNavCompact.style.display = 'none';
+  const fits = el.previewNavButtons.scrollWidth <= el.previewNavButtons.clientWidth + 1;
+  if (!fits) {
+    el.previewNavButtons.style.display = 'none';
+    el.previewNavCompact.style.display = 'flex';
+  }
+}
+
+function refreshNav() {
+  renderNavButtons();
+  updateNavHighlight();
+  updateNavFit();
+}
+
+function hideNav() {
+  el.previewNavButtons.innerHTML = '';
+  el.previewNavButtons.style.display = 'none';
+  el.previewNavCompact.style.display = 'none';
+}
+
+el.previewNavPrev.addEventListener('click', () => goToSlideIndex(currentSlideIndex - 1));
+el.previewNavNext.addEventListener('click', () => goToSlideIndex(currentSlideIndex + 1));
+
+el.previewCanvasWrap.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    goToSlideIndex(currentSlideIndex - 1);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    goToSlideIndex(currentSlideIndex + 1);
+  }
+});
 
 // --- Collapse / expand -----------------------------------------------------
 
@@ -204,12 +299,16 @@ el.paneResizer.addEventListener('pointerup', endDrag);
 el.paneResizer.addEventListener('pointercancel', endDrag);
 
 // Resizing the browser window itself (not just dragging the divider) also
-// changes the preview wrapper's size, so it needs the same re-render.
+// changes the preview wrapper's size, so it needs the same re-render — and
+// the toolbar's available width for the nav buttons vs. compact form.
 let resizeHandle = null;
 window.addEventListener('resize', () => {
   if (collapsed) return;
   clearTimeout(resizeHandle);
-  resizeHandle = setTimeout(reRenderAtCurrentSize, 150);
+  resizeHandle = setTimeout(() => {
+    reRenderAtCurrentSize();
+    updateNavFit();
+  }, 150);
 });
 
 // --- Copy / download as PNG -------------------------------------------------
@@ -245,8 +344,10 @@ el.previewDownloadBtn.addEventListener('click', () => {
     }
     const entry = resolvePreviewEntry();
     const base = entry ? entry.name.replace(/\.js$/i, '') : 'preview';
-    triggerDownload(blob, `${base}.png`);
-    notifySuccess(`Downloaded ${base}.png`);
+    const suffix = slideCount > 1 ? `-${currentSlideIndex + 1}` : '';
+    const filename = `${base}${suffix}.png`;
+    triggerDownload(blob, filename);
+    notifySuccess(`Downloaded ${filename}`);
   }, 'image/png');
 });
 

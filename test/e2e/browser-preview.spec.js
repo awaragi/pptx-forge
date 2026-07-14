@@ -1,6 +1,16 @@
 import { test, expect } from '@playwright/test';
 import { gotoApp, slideModule } from './fixtures.js';
 
+// A single slide file can call pptx.addSlide() more than once — the sample
+// showcase deck does this deliberately — so one previewed file can compile
+// to more than one actual slide.
+function multiSlideModule(texts) {
+  const bodies = texts
+    .map((t) => `  { const slide = pptx.addSlide(); lib.prim.text(slide, { x: 0.5, y: 0.5, w: 9, h: 1 }, ${JSON.stringify(t)}); }`)
+    .join('\n');
+  return `export default function (pptx, lib) {\n${bodies}\n};\n`;
+}
+
 test('editing the active slide updates the preview canvas without a manual refresh', async ({ page }) => {
   await gotoApp(page, {
     files: { 'slide-01.js': slideModule('Original preview text') },
@@ -190,4 +200,108 @@ test('rendering a preview makes no network requests', async ({ page }) => {
   await expect(page.locator('#preview-status')).toHaveText('slide-01.js');
 
   expect(externalRequests).toEqual([]);
+});
+
+test('a slide file with multiple addSlide() calls shows numbered navigation buttons and lets you switch between them', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await gotoApp(page, {
+    files: { 'multi.js': multiSlideModule(['FIRST', 'SECOND', 'THIRD']) },
+  });
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('multi.js');
+
+  await expect(page.locator('#preview-nav-buttons button')).toHaveCount(3);
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('1');
+
+  await page.locator('#preview-nav-buttons button', { hasText: '3' }).click();
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('3');
+});
+
+test('a single-slide file shows no navigation controls at all', async ({ page }) => {
+  await gotoApp(page, {
+    files: { 'slide-01.js': slideModule('Only one slide') },
+  });
+  await page.locator('#file-list li[data-name="slide-01.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('slide-01.js');
+
+  await expect(page.locator('#preview-nav-buttons')).toBeHidden();
+  await expect(page.locator('#preview-nav-compact')).toBeHidden();
+});
+
+test('when too many slides to fit as buttons, the compact arrows+counter form is used instead', async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 900 });
+  const many = Array.from({ length: 30 }, (_, i) => `SLIDE ${i + 1}`);
+  await gotoApp(page, {
+    files: { 'multi.js': multiSlideModule(many) },
+  });
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('multi.js');
+
+  await expect(page.locator('#preview-nav-buttons')).toBeHidden();
+  await expect(page.locator('#preview-nav-compact')).toBeVisible();
+  await expect(page.locator('#preview-nav-counter')).toHaveText('1 / 30');
+  await expect(page.locator('#preview-nav-prev')).toBeDisabled();
+
+  await page.locator('#preview-nav-next').click();
+  await expect(page.locator('#preview-nav-counter')).toHaveText('2 / 30');
+  await expect(page.locator('#preview-nav-prev')).toBeEnabled();
+});
+
+test('arrow keys navigate slides when the preview canvas has focus', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await gotoApp(page, {
+    files: { 'multi.js': multiSlideModule(['FIRST', 'SECOND', 'THIRD']) },
+  });
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('multi.js');
+
+  await page.locator('#preview-canvas-wrap').click();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('2');
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('1');
+});
+
+test('the current sub-slide is preserved across an edit to the same file, but resets when switching files', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await gotoApp(page, {
+    files: {
+      'multi.js': multiSlideModule(['FIRST', 'SECOND', 'THIRD']),
+      'other.js': slideModule('Other file'),
+    },
+  });
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('multi.js');
+
+  await page.locator('#preview-nav-buttons button', { hasText: '2' }).click();
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('2');
+
+  // Same-file edit: sub-slide index should be preserved, not reset to 1.
+  const content = await page.locator('#editor').inputValue();
+  await page.locator('#editor').fill(`${content}\n// a harmless comment\n`);
+  await page.waitForTimeout(700); // past the debounce
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('2');
+
+  // Switching to a different file and back resets to the first sub-slide.
+  await page.locator('#file-list li[data-name="other.js"]').click();
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('1');
+});
+
+test('downloading a multi-slide file names the file after the currently viewed sub-slide', async ({ page }) => {
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await gotoApp(page, {
+    files: { 'multi.js': multiSlideModule(['FIRST', 'SECOND']) },
+  });
+  await page.locator('#file-list li[data-name="multi.js"]').click();
+  await expect(page.locator('#preview-status')).toHaveText('multi.js');
+
+  await page.locator('#preview-nav-buttons button', { hasText: '2' }).click();
+  await expect(page.locator('#preview-nav-buttons button.active')).toHaveText('2');
+
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.locator('#preview-download-btn').click(),
+  ]);
+  expect(download.suggestedFilename()).toBe('multi-2.png');
 });

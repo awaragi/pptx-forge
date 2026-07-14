@@ -106,6 +106,8 @@ Open the generated `pptx-forge.html` in a browser and:
 
 A live preview pane sits below the editor, rendering the slide file you're currently editing — it recompiles and re-renders automatically a moment after you stop typing, with no manual refresh needed. While `theme.js` or `masters.js` is open instead of a slide, it keeps showing whichever slide you last viewed, updated live with your in-progress theme/master edits. Drag the divider above it to resize, or use the toolbar's collapse button to hide it entirely — both the size and collapsed state are remembered across reloads. The toolbar also has buttons to copy the current preview to the clipboard as a PNG or download it as one.
 
+A slide file can call `pptx.addSlide()` more than once — the preview pane handles this by showing numbered slide buttons in the toolbar (or, when there isn't room for all of them, compact ‹ N / M › arrows instead), letting you step through every slide the file produces. Left/Right arrow keys also work once the preview has focus. Downloading a multi-slide file's preview names the file after the sub-slide currently shown (e.g. `deck-2.png`).
+
 Only `.js` files are accepted, and Forge requires at least one slide file besides `theme.js`. This tool has no special sandboxing around the code it runs — it's meant for the same trusted, local use case as the CLI, just without requiring Node.
 
 Import/export workspace zips follow a strict layout: `theme.js` at the root, slide files under `slides/`. Import requires `theme.js` at the root or it fails with an error; any other entries in the zip (stray files, `.js` files outside `slides/`, nested folders) are silently ignored.
