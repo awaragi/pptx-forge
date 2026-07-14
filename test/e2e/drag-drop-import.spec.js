@@ -11,6 +11,16 @@ async function buildWorkspaceZip(slides) {
   return zip.generateAsync({ type: 'nodebuffer' });
 }
 
+// Mirrors what Finder's "Compress" (or `zip -r name folder`) produces: the
+// whole workspace nested one level inside a folder matching the zip's own name.
+async function buildWrappedWorkspaceZip(folderName, slides) {
+  const zip = new JSZip();
+  zip.file(`${folderName}/theme.js`, DEFAULT_THEME);
+  zip.file(`${folderName}/masters.js`, DEFAULT_MASTERS);
+  for (const [name, content] of Object.entries(slides)) zip.file(`${folderName}/slides/${name}`, content);
+  return zip.generateAsync({ type: 'nodebuffer' });
+}
+
 test('dropping a .js file adds it as a new slide', async ({ page }) => {
   await gotoApp(page);
 
@@ -26,6 +36,16 @@ test('dropping a .zip named after a workspace that does not exist creates it', a
   await dropFiles(page, [{ name: 'Imported.zip', content: zipBuffer }]);
 
   await expect(page.locator('#workspace-select')).toHaveValue('Imported');
+  await expect(page.locator('#file-list li[data-name="imported.js"]')).toBeVisible();
+});
+
+test('dropping a .zip with everything nested in one top-level folder still imports', async ({ page }) => {
+  await gotoApp(page, { workspaceName: 'Untitled' });
+  const zipBuffer = await buildWrappedWorkspaceZip('sdlc-mythos-deck', { 'imported.js': slideModule('From wrapped zip') });
+
+  await dropFiles(page, [{ name: 'sdlc-mythos-deck.zip', content: zipBuffer }]);
+
+  await expect(page.locator('#workspace-select')).toHaveValue('sdlc-mythos-deck');
   await expect(page.locator('#file-list li[data-name="imported.js"]')).toBeVisible();
 });
 

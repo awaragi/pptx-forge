@@ -114,27 +114,49 @@ export async function exportWorkspaceZip({ theme, masters, slides }) {
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
 }
 
+// Many zip tools (Finder's "Compress", `zip -r name folder`, an AI chat's zip
+// export) wrap the whole workspace in one top-level folder instead of putting
+// theme.js at the archive root. When theme.js is missing at the root but every
+// entry (ignoring macOS's __MACOSX metadata folder) lives under one shared
+// top-level folder that itself contains theme.js, treat that folder as the
+// root — otherwise leave the layout untouched so the "missing theme.js" error
+// still fires for genuinely malformed archives.
+function findRootPrefix(zip) {
+  if (zip.file('theme.js')) return '';
+  const topLevelNames = new Set();
+  for (const name of Object.keys(zip.files)) {
+    if (name.startsWith('__MACOSX/')) continue;
+    const top = name.split('/')[0];
+    if (top) topLevelNames.add(top);
+  }
+  if (topLevelNames.size !== 1) return '';
+  const [only] = topLevelNames;
+  return zip.file(`${only}/theme.js`) ? `${only}/` : '';
+}
+
 // Reads a dropped/selected .zip File into a flat { name: content } map.
 // Enforces the strict workspace layout: theme.js must sit at the zip root
-// (missing it is a hard failure), masters.js at the root is optional, and
-// slides must live directly under slides/*.js. Anything else in the archive —
-// stray files, nested folders, slide-shaped files outside slides/ — is
-// silently ignored, not an error.
+// (missing it is a hard failure, unless findRootPrefix finds a single
+// wrapping folder), masters.js at the root is optional, and slides must live
+// directly under slides/*.js. Anything else in the archive — stray files,
+// nested folders, slide-shaped files outside slides/ — is silently ignored,
+// not an error.
 export async function readWorkspaceZip(file) {
   const zip = await JSZip.loadAsync(file);
-  const themeEntry = zip.file('theme.js');
+  const prefix = findRootPrefix(zip);
+  const themeEntry = zip.file(`${prefix}theme.js`);
   if (!themeEntry) {
     throw new Error('missing theme.js at the root of the zip.');
   }
 
   const files = { 'theme.js': await themeEntry.async('string') };
-  const mastersEntry = zip.file('masters.js');
+  const mastersEntry = zip.file(`${prefix}masters.js`);
   if (mastersEntry) {
     files['masters.js'] = await mastersEntry.async('string');
   }
   for (const entry of Object.values(zip.files)) {
-    if (entry.dir) continue;
-    const match = entry.name.match(SLIDE_ZIP_PATH);
+    if (entry.dir || !entry.name.startsWith(prefix)) continue;
+    const match = entry.name.slice(prefix.length).match(SLIDE_ZIP_PATH);
     if (!match) continue;
     files[match[1]] = await entry.async('string');
   }
