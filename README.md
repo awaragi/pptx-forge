@@ -213,3 +213,5 @@ Planned features and improvements:
 - **Version history** — Store version numbers with workspaces to display changelog since last compilation
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
 - **Responsive design** — Improve layout adaptability for different screen sizes and resolutions
+- **Settings icon** — Add a settings icon with options such as including components in AI prompts and generating file names with timestamps
+

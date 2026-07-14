@@ -43,7 +43,7 @@ const SCREENS = [
         ${item('✎', 'Rename', 'click the pencil next to the switcher.')}
         ${item(icon('arrow-down-tray'), 'Import', 'load a workspace from a <code>.zip</code>.')}
         ${item(icon('arrow-up-tray'), 'Export', 'save the current workspace as a <code>.zip</code>.')}
-        ${item('🗑', 'Delete', 'remove the current workspace (cannot be undone).')}
+        ${item(icon('trash'), 'Delete', 'remove the current workspace (cannot be undone).')}
       </ul>
     `,
   },
@@ -56,7 +56,7 @@ const SCREENS = [
         ${item(icon('plus'), 'New slide', 'adds a blank slide file.')}
         ${item(icon('arrow-down-tray'), 'Load slides', 'pick <code>.js</code> files from disk.')}
         ${item('✎', 'Rename', 'rename the active file.')}
-        ${item('🗑', 'Discard', `remove a slide, or ${icon('rotate-ccw')} <strong>Reset</strong> resets <code>theme.js</code> to its default.`)}
+        ${item(icon('trash'), 'Discard', `remove a slide, or ${icon('rotate-ccw')} <strong>Reset</strong> resets <code>theme.js</code> to its default.`)}
       </ul>
     `,
   },
