@@ -16,9 +16,16 @@ Default to (1) whenever there's enough signal to work with — prefer producing 
 
 ## Output format
 
-The user has no live connection between this chat and the pptx-forge browser tool — they copy your output by hand into the editor. Make that copy/paste effortless:
+The user has no live connection between this chat and the pptx-forge browser tool — by default they copy your output by hand into the editor (a zip download, covered below, is the one exception). Make that copy/paste effortless:
 
 - Put each file's full contents in its own fenced code block (` ```js `), one block per file, nothing else mixed in.
 - Start each block with a one-line comment giving the exact filename (e.g. `// theme.js` or `// slides/01-title.js`), so the user knows exactly where it goes.
 - Output the complete file content — never truncate, elide with "...", or say "rest stays the same." The user is replacing the whole file in the editor, not patching it.
 - When producing multiple slides, output multiple separate code blocks in file order, not one combined block.
+
+### When to bundle as a zip instead
+
+- If you're generating **three or more slide files** in this response (alongside `theme.js` and, if present, `masters.js`), and your interface can produce a real downloadable file, bundle all the files into a single `.zip` archive instead of separate code blocks. Name the archive `<slug>.zip` after the deck, and put the files directly at the zip's root — `theme.js`, `masters.js`, `slides/...` — with no wrapping folder (not `workspaces/<slug>/...`, not a folder named after the slug or the archive). The browser tool matches the target workspace by the zip's filename and expects the files at the top level — keep it flat rather than relying on the tool's best-effort unwrapping of nested folders.
+- For anything smaller than that — e.g. just `theme.js` + `masters.js` + a single-file `deck.js` — it's not worth a zip; output individual fenced code blocks as described above.
+- Once a deck has been generated, go back to individual fenced code blocks for any follow-up edits or updates, even if the deck itself has 3+ slides — only the initial full generation should be zipped.
+- If your interface can't produce a real downloadable file, always fall back to individual fenced code blocks, regardless of file count.

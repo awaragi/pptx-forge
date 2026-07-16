@@ -214,4 +214,9 @@ Planned features and improvements:
 - **Master slide support** — Allow defining and using master slides to maintain consistent layout and styling across multiple slides
 - **Responsive design** — Improve layout adaptability for different screen sizes and resolutions
 - **Settings icon** — Add a settings icon with options such as including components in AI prompts and generating file names with timestamps
+- **Support for other files** — Support for other files (.md, .txt) in workspaces but not included in the generated deck and only for complete packaging of workspace zips
+- **Update numbering of slides** — Update numbering of slides to be increment of 10 to allow insertion of different slides in between existing slides without having to rename all slides after the insertion point
+- **Trash can for deleted items** — Any deleted slides or projects should go to a trash can so that they can be restored if needed.
+- **Workspace file monitoring** — Monitor files in a workspace (CLI) to regenerate (using snapshots) the pptx file if any of the files in the workspace are changed. This will allow for a more seamless workflow when editing slides and themes.
+
 
