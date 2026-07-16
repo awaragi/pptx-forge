@@ -6,6 +6,7 @@
     "forge": "node bin/forge.js",
     "build": "node bin/forge.js",
     "generate": "node bin/forge.js",
+    "watch": "sh bin/watch.sh",
     "backup": "node bin/backup.js",
     "create": "node bin/create.js",
     "build:browser": "node scripts/build-browser.js",
