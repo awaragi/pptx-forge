@@ -6,6 +6,16 @@ import { el } from './elements.js';
 import { createInlineRename } from './inline-rename.js';
 import { notifySuccess } from './notifications.js';
 import { updatePreviewNow } from './preview.js';
+import { sortedTrashKeys, restoreFromTrash } from './trash.js';
+
+// Collapsed by default: the Trash group is secondary to Slides, so it starts
+// out of the way until there's something in it worth looking at.
+let trashExpanded = false;
+
+export function toggleTrashGroup() {
+  trashExpanded = !trashExpanded;
+  render();
+}
 
 function nodeNameSpan(name) {
   const span = document.createElement('span');
@@ -48,6 +58,22 @@ export function render() {
     }
     li.addEventListener('click', () => selectFile(name));
     el.fileList.appendChild(li);
+  }
+
+  el.trashList.innerHTML = '';
+  const trashKeys = sortedTrashKeys();
+  el.trashCount.textContent = String(trashKeys.length);
+  el.trashToggleIcon.textContent = trashExpanded ? '▾' : '▸';
+  el.trashList.classList.toggle('expanded', trashExpanded);
+  el.emptyTrashBtn.style.display = trashKeys.length > 0 ? '' : 'none';
+  for (const trashKey of trashKeys) {
+    const entry = state.trash.get(trashKey);
+    const li = document.createElement('li');
+    li.dataset.trashKey = trashKey;
+    li.className = 'slide-item';
+    li.appendChild(nodeNameSpan(entry.name));
+    li.addEventListener('click', () => restoreFromTrash(trashKey));
+    el.trashList.appendChild(li);
   }
 
   const entry = getActiveEntry();

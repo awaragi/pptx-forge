@@ -221,6 +221,20 @@ button:disabled { opacity: 0.5; cursor: default; }
   letter-spacing: 0.08em;
   color: var(--text-dim);
 }
+.trash-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+.trash-toggle-icon {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--text-dim);
+  transition: transform 0.1s;
+}
+.trash-list { display: none; }
+.trash-list.expanded { display: block; }
 .editor-pane {
   flex: 1 1 auto;
   display: flex;

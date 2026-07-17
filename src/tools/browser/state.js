@@ -1,4 +1,5 @@
 import { writeWorkspace, setActiveWorkspaceName, getActiveWorkspaceName, readWorkspace } from './storage.js';
+import { splitSnapshot } from './trash-logic.js';
 
 export const THEME_NAME = 'theme.js';
 export const MASTERS_NAME = 'masters.js';
@@ -13,12 +14,15 @@ export const MASTERS_PLACEHOLDER = typeof __MASTERS_PLACEHOLDER__ === 'string' ?
 
 // State: theme and masters are fixed singleton entries (pinned, in that sidebar
 // order); slides is a name-keyed map of { name, content } compiled/displayed in
-// ascending filename order. workspaceName is both the localStorage key this state
+// ascending filename order. trash is a trashKey-keyed map of { name, trashKey,
+// content } for discarded slides — excluded from compile/export, which only
+// ever read from slides. workspaceName is both the localStorage key this state
 // is saved under (see storage.js) and the base name used for forge/export output.
 export const state = {
   theme: { name: THEME_NAME, content: THEME_PLACEHOLDER },
   masters: { name: MASTERS_NAME, content: MASTERS_PLACEHOLDER },
   slides: new Map(),
+  trash: new Map(),
   active: THEME_NAME,
   workspaceName: DEFAULT_WORKSPACE_NAME,
 };
@@ -46,6 +50,7 @@ export function getActiveEntry() {
 export function currentWorkspaceSnapshot() {
   const snapshot = { [THEME_NAME]: state.theme.content, [MASTERS_NAME]: state.masters.content };
   for (const [name, entry] of state.slides) snapshot[name] = entry.content;
+  for (const [trashKey, entry] of state.trash) snapshot[trashKey] = entry.content;
   return snapshot;
 }
 
@@ -65,10 +70,12 @@ export function applyWorkspace(name, snapshot) {
   state.workspaceName = name;
   state.theme.content = snapshot[THEME_NAME] ?? THEME_PLACEHOLDER;
   state.masters.content = snapshot[MASTERS_NAME] ?? MASTERS_PLACEHOLDER;
+  const { slides, trash } = splitSnapshot(snapshot, isPinnedName);
   state.slides.clear();
-  for (const [fileName, content] of Object.entries(snapshot)) {
-    if (isPinnedName(fileName)) continue;
-    state.slides.set(fileName, { name: fileName, content });
+  for (const { name: fileName, content } of slides) state.slides.set(fileName, { name: fileName, content });
+  state.trash.clear();
+  for (const { trashKey, name: originalName, content } of trash) {
+    state.trash.set(trashKey, { name: originalName, trashKey, content });
   }
   state.active = isPinnedName(previousActive) || state.slides.has(previousActive) ? previousActive : THEME_NAME;
 }

@@ -18,6 +18,7 @@ import { el } from './elements.js';
 import { render, selectFile } from './view.js';
 import { renderWorkspaceSelect } from './workspace.js';
 import { notifySuccess, notifyError, notifyInfo } from './notifications.js';
+import { moveToTrash } from './trash.js';
 
 const NEW_SLIDE_TEMPLATE = `export default function (pptx, lib) {
   const { theme, prim, comp, tables, layout, frame } = lib;
@@ -181,12 +182,11 @@ export async function exportWorkspace() {
 export function discardActiveFile() {
   if (isPinnedName(state.active)) return;
   const name = state.active;
-  if (!window.confirm(`Discard ${name}? This cannot be undone.`)) return;
-  state.slides.delete(name);
+  if (!window.confirm(`Move "${name}" to trash?`)) return;
+  moveToTrash(name);
   state.active = THEME_NAME;
   render();
-  persistWorkspace();
-  notifySuccess(`Discarded ${name}`);
+  notifySuccess(`Moved ${name} to trash`);
 }
 
 export async function forge() {

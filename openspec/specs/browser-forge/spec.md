@@ -129,16 +129,16 @@ The system SHALL provide a Download action that downloads the currently active f
 - **WHEN** the user edits the active file and clicks Download
 - **THEN** the browser downloads a file whose name matches the active sidebar entry's name and whose content matches the current editor content
 
-### Requirement: Discard removes the active slide file
-The system SHALL provide a Discard action that removes the active slide file from the sidebar and from memory, after the user confirms the action. This action is unavailable for `theme.js` and `masters.js`.
+### Requirement: Discard moves the active slide file to trash
+The system SHALL provide a Discard action that, after the user confirms the action, moves the active slide file from the sidebar's "Slides" list into the workspace's Trash list instead of deleting it, excluding it from subsequent Forge runs and workspace export while it remains in trash. This action is unavailable for `theme.js` and `masters.js`. The confirmation prompt SHALL indicate the file is being moved to trash and can be restored, rather than stating the action cannot be undone.
 
-#### Scenario: Discard removes a slide file after confirmation
+#### Scenario: Discard moves a slide file to trash after confirmation
 - **WHEN** the user clicks Discard on a slide file and confirms the prompt
-- **THEN** that file's sidebar entry is removed, its content is no longer part of the in-memory file set, and it is excluded from subsequent Forge runs
+- **THEN** that file's entry is removed from the "Slides" list and appears in the "Trash" list instead, and it is excluded from subsequent Forge runs
 
 #### Scenario: Discard is cancellable
 - **WHEN** the user clicks Discard and declines the confirmation prompt
-- **THEN** the file is not removed and no state changes
+- **THEN** the file is not moved and no state changes
 
 #### Scenario: Discard is unavailable for masters.js
 - **WHEN** the active file is `masters.js`

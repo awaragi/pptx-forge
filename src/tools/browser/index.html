@@ -85,6 +85,18 @@
           </span>
         </div>
         <ul id="file-list" class="file-tree"></ul>
+        <div class="tree-group-header">
+          <span id="trash-toggle" class="trash-toggle">
+            <span id="trash-toggle-icon" class="trash-toggle-icon">▸</span>
+            <span class="tree-group-label">Trash (<span id="trash-count">0</span>)</span>
+          </span>
+          <span class="node-actions-buttons">
+            <button id="empty-trash-btn" class="icon-btn" title="Empty trash" aria-label="Empty trash">
+              <span class="icon icon-trash"></span>
+            </button>
+          </span>
+        </div>
+        <ul id="trash-list" class="file-tree trash-list"></ul>
         <input id="file-input" type="file" accept=".js,.zip" multiple hidden>
       </aside>
       <main class="editor-pane">

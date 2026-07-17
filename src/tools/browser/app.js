@@ -13,9 +13,10 @@ import { isHelpOpen, closeHelp, nextHelpScreen, prevHelpScreen, maybeAutoOpenHel
 import { notifyInfo, notifyError } from './notifications.js';
 import { getActiveEntry, persistWorkspace, restoreOrCreateActiveWorkspace, state } from './state.js';
 import { el } from './elements.js';
-import { render, fileRename } from './view.js';
+import { render, fileRename, toggleTrashGroup } from './view.js';
 import { renderWorkspaceSelect, switchWorkspace, createWorkspace, deleteActiveWorkspace, workspaceRename, handleExternalChange } from './workspace.js';
 import { addBlankSlide, resetPinnedFile, handleFiles, downloadActiveFile, discardActiveFile, forge, exportWorkspace } from './slides.js';
+import { emptyTrash } from './trash.js';
 import { isAiReferenceOpen, closeAiReference } from './ai-reference.js';
 import { isTransferOpen, closeTransferPicker } from './transfer.js';
 import { schedulePreviewUpdate, updatePreviewNow } from './preview.js';
@@ -84,6 +85,8 @@ el.fileInput.addEventListener('change', async (e) => {
 });
 el.downloadBtn.addEventListener('click', downloadActiveFile);
 el.discardBtn.addEventListener('click', discardActiveFile);
+el.trashToggle.addEventListener('click', toggleTrashGroup);
+el.emptyTrashBtn.addEventListener('click', emptyTrash);
 el.filenameGroup.addEventListener('click', fileRename.start);
 // node-actions is reparented into the active tree row on every render(); its
 // clicks must not bubble to that row's own click->selectFile listener.
