@@ -11,6 +11,8 @@ import pptxgen from 'pptxgenjs';
 import { createLib } from '../src/lib/lib.js';
 import { applyMasters } from '../src/lib/masters.js';
 import { setupPptx, patchThemeColors } from '../src/lib/render.js';
+import { renderSlidesToImages, BrowserNotInstalledError } from '../src/lib/render-images.js';
+import { imageFilename } from '../src/lib/image-filename.js';
 import open from 'open';
 
 const args = process.argv.slice(2);
@@ -18,6 +20,7 @@ const helpFlag      = args.includes('--help')     || args.includes('-h');
 const openFlag      = args.includes('--open')     || args.includes('-o');
 const previewFlag   = args.includes('--preview')  || args.includes('-v');
 const snapshotFlag  = args.includes('--snapshot') || args.includes('-t');
+const imagesFlag    = args.includes('--images')   || args.includes('-i');
 const workspaceArg  = args.find(a => !a.startsWith('-'));
 
 const HELP = `\
@@ -33,6 +36,7 @@ Options:
   -o, --open      Open the generated file after compiling
   -v, --preview   Preview the generated file in QuickLook (macOS only)
   -t, --snapshot  Write to a timestamped filename instead of overwriting
+  -i, --images    Export every slide as a PNG next to the generated file
   -h, --help      Show this help message
 
 Examples:
@@ -41,6 +45,8 @@ Examples:
   npm run forge my-deck --preview
   npm run forge my-deck --snapshot
   npm run forge my-deck --open --snapshot
+  npm run forge my-deck --images
+  npm run forge my-deck --images --snapshot
   npm run forge workspaces/my-deck/slides/overview.js
 `;
 
@@ -177,8 +183,30 @@ console.log(`\nGenerated: ${outPath}`);
 // Patch ppt/theme/theme1.xml with workspace scheme slot hex values
 const raw = await readFile(outPath);
 const zip = await patchThemeColors(await JSZip.loadAsync(raw), lib.theme.scheme);
-await writeFile(outPath, await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' }));
+const patchedBuffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+await writeFile(outPath, patchedBuffer);
 console.log('  theme colors patched');
+
+if (imagesFlag) {
+  console.log('\nRendering slide images...');
+  let images;
+  try {
+    images = await renderSlidesToImages(patchedBuffer);
+  } catch (err) {
+    if (err instanceof BrowserNotInstalledError) {
+      console.error(`\nError: ${err.message}`);
+    } else {
+      console.error('Error: failed to render slide images:\n');
+      console.error(err.stack || err.message);
+    }
+    process.exit(1);
+  }
+  for (let i = 0; i < images.length; i++) {
+    const filename = imageFilename(workspaceSlug, snapshotFlag ? timestamp : null, i + 1);
+    await writeFile(join(outDir, filename), images[i]);
+    console.log(`  + ${filename}`);
+  }
+}
 
 if (openFlag) {
   await open(outPath);

@@ -21,12 +21,17 @@ workspaces/my-deck/
 ## Prerequisites
 
 - Node.js 18+
+- `chromium-headless-shell` (only needed for `forge --images`) — install with `npx playwright install chromium-headless-shell`
 
 ## Install
 
 ```bash
 npm install
 ```
+
+`npm install` does not download any browser binaries. `forge --images` needs `chromium-headless-shell` installed separately (see above); nothing else in this project requires it.
+
+If you're developing pptx-forge itself and plan to run the e2e test suite (`npm run test:e2e`, using `@playwright/test`), `npx playwright install` (no arguments) installs both full Chromium and `chromium-headless-shell` in one step — after that, `forge --images` also works with no further setup.
 
 ## Create a workspace
 
@@ -58,6 +63,7 @@ Pass a path to a single slide `.js` file instead of a workspace to compile just 
 | `--open` | `-o` | Open the generated file in the default app after compiling |
 | `--preview` | `-v` | Preview the generated file in QuickLook — macOS only |
 | `--snapshot` | `-t` | Write to a timestamped file (`my-deck_2026-06-29_14-30-00.pptx`) instead of overwriting |
+| `--images` | `-i` | Export every slide as a PNG next to the generated file |
 | `--help` | `-h` | Show usage and exit |
 
 > **Note:** Due to how npm parses arguments, flags must be separated from the script name with `--`.
@@ -67,8 +73,20 @@ npm run forge my-deck -- --open            # compile and open
 npm run forge my-deck -- --preview         # quick preview via QuickLook (macOS)
 npm run forge my-deck -- --snapshot        # timestamped output
 npm run forge my-deck -- --open --snapshot # both
+npm run forge my-deck -- --images          # export my-deck-01.png, my-deck-02.png, ...
+npm run forge my-deck -- --images --snapshot # export my-deck_2026-06-29_14-30-00-01.png, ...
 npm run forge -- --help                    # show help
 ```
+
+`--images` writes one PNG per slide to `workspaces/<slug>/out/`, overwriting any file already at that path. Filenames follow `<slug>[_<timestamp>]-NN.png` — the timestamp is included only when `--snapshot` is also passed, using the exact same timestamp as the `.pptx` written in that run.
+
+Rendering is done in a headless browser (`chromium-headless-shell`), reusing the same renderer the [browser tool](#browser-tool)'s live preview uses. If it isn't installed yet, `--images` fails with an error telling you to run:
+
+```bash
+npx playwright install chromium-headless-shell
+```
+
+If you've already run `npx playwright install` for the e2e test suite (see below), `--images` works immediately — that command installs `chromium-headless-shell` alongside full Chromium by default.
 
 ## Backup
 
@@ -79,16 +97,18 @@ npm run backup workspaces/my-deck   # relative path — useful for tab completio
 
 Zips slide and theme files into `workspaces/my-deck/backups/my-deck_<timestamp>.zip`.
 
-## Watch snapshots
+## Watch
 
 ```bash
-npm run watch -- my-deck
-npm run watch -- workspaces/my-deck   # relative path — useful for tab completion
+npm run watch -- my-deck                    # quiet rebuild on every change, no flags forced
+npm run watch -- my-deck --snapshot         # timestamped file on every change
+npm run watch -- my-deck --snapshot --open  # timestamped file, opened after every change
+npm run watch -- my-deck --images           # re-export slide PNGs on every change
+npm run watch -- workspaces/my-deck --snapshot   # relative path — useful for tab completion
 ```
 
-Watches workspace source files and automatically runs snapshot generation when files change.
+Watches workspace source files and re-runs `forge` when they change, forwarding whatever [forge options](#options) you pass — `--open`, `--preview`, `--snapshot`, `--images`, any combination. Nothing is forced: pass exactly what you'd pass to `npm run forge` directly.
 
-- Uses timestamped output files in `workspaces/<slug>/out/`.
 - Debounces rapid edit bursts into a single generation cycle.
 - Ignores generated `out/` and `backups/` paths to prevent feedback loops.
 - Runs until stopped with Ctrl+C.

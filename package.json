@@ -1,6 +1,6 @@
 {
   "name": "pptx-forge",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "type": "module",
   "scripts": {
     "forge": "node bin/forge.js",
@@ -34,11 +34,16 @@
     "chart.js": "4.5.1",
     "jszip": "^3.10.1",
     "open": "^11.0.0",
+    "playwright-core": "^1.61.1",
     "pptxgenjs": "^3.12.0",
     "pptxviewjs": "1.1.9"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "esbuild": "^0.28.1"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.2": true
   }
 }

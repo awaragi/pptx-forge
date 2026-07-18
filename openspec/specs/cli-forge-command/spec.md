@@ -18,7 +18,7 @@ The system SHALL accept `--help` or `-h` at any position in the argument list, p
 
 #### Scenario: Help text content
 - **WHEN** help is displayed
-- **THEN** output SHALL include: usage line, `<workspace>` argument, `-o/--open`, `-t/--snapshot`, `-h/--help` options, and at least one usage example
+- **THEN** output SHALL include: usage line, `<workspace>` argument, `-o/--open`, `-t/--snapshot`, `-i/--images`, `-h/--help` options, and at least one usage example
 
 ### Requirement: Open flag launches generated file
 The system SHALL accept `--open` or `-o` and, after a successful compile, open the generated `.pptx` file in the OS default application using the `open` npm package.
@@ -45,6 +45,21 @@ The system SHALL accept `--snapshot` or `-t` and write the generated file to `ou
 #### Scenario: Snapshot and open combined
 - **WHEN** user runs `npm run forge my-deck --snapshot --open`
 - **THEN** the timestamped file is written and that same file is opened
+
+### Requirement: Images flag triggers per-slide image export
+The system SHALL accept `--images` or `-i` and, after a successful compile, export every slide in the workspace as a PNG image (see the `slide-image-export` capability for filename, output-path, and rendering behavior).
+
+#### Scenario: Images flag position is irrelevant
+- **WHEN** user runs `npm run forge --images my-deck` or `npm run forge my-deck -i`
+- **THEN** both forms export every slide as a PNG after compiling
+
+#### Scenario: Images flag combined with snapshot
+- **WHEN** user runs `npm run forge my-deck --snapshot --images`
+- **THEN** the system writes the timestamped `.pptx` and exports images using that same timestamp in their filenames
+
+#### Scenario: Images flag combined with open or preview
+- **WHEN** user runs `npm run forge my-deck --images --open` or `npm run forge my-deck --images --preview`
+- **THEN** image export happens independently of and in addition to opening/previewing the generated `.pptx`
 
 ### Requirement: Missing workspace slug shows error
 The system SHALL print an error and exit non-zero when no workspace slug is provided and `--help` was not requested.
